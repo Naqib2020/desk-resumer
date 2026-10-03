@@ -5,7 +5,6 @@ Command-line interface for DeskResumer.
 import argparse
 import sys
 import os
-import yaml
 from pathlib import Path
 
 from .core.watcher import Watchdog
@@ -17,14 +16,18 @@ from .core.parser import CooldownParser
 def load_config(config_path: str = "config.yaml") -> dict:
     path = Path(config_path)
     if not path.exists():
-        # Fallback to config.example.yaml if config.yaml doesn't exist yet
         example_path = path.parent / "config.example.yaml"
         if example_path.exists():
             path = example_path
         else:
             return {}
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+    try:
+        import yaml
+        with open(path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except ImportError:
+        print("[Warning] PyYAML is not installed. Using default built-in configuration.")
+        return {}
 
 
 def main():
