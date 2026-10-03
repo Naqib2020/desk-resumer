@@ -14,7 +14,7 @@ monitoring:
 
 # Resumption prompt behavior
 resumption:
-  # Message injected into the chat prompt input when cooldown completes
+  # Fallback message injected if not running in Queue/Checklist mode
   default_prompt: "Continue working on the task from where you left off."
   
   # Delay (in seconds) between focusing the window and typing the prompt
@@ -25,19 +25,25 @@ power:
   # Whether to prevent laptop sleep during cooldowns
   prevent_sleep: true
   
-  # Method on macOS: "caffeinate"
-  # Method on Windows: "SetThreadExecutionState"
-  keep_display_on: false  # If false, allows display to turn off while keeping CPU running
+  # If false, allows display to turn off while keeping CPU & disk running
+  keep_display_on: false
 
-# Remote alerts & notifications (optional)
+# Remote alerts & notifications
 notifications:
-  enabled: false
+  enabled: true
   
-  # Discord Webhook integration
+  # Option 1: ntfy.sh (Zero account needed, free push notifications to phone)
+  # 1. Download the free 'ntfy' app on iOS or Android (or visit https://ntfy.sh in your browser)
+  # 2. Subscribe to any unique topic name (e.g., 'desk-resumer-naqib-alerts')
+  # 3. Enter that topic name below:
+  ntfy:
+    topic: ""
+
+  # Option 2: Discord Webhook
   discord:
     webhook_url: ""
     
-  # Telegram Bot integration
+  # Option 3: Telegram Bot
   telegram:
     bot_token: ""
     chat_id: ""

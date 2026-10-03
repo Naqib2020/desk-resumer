@@ -28,6 +28,22 @@ class TargetApp(ABC):
         """Check if any of the process names are currently running."""
         return any(self.adapter.is_process_running(p) for p in self.process_names)
 
+    BUSY_KEYWORDS = [
+        "working for",
+        "thinking",
+        "generating",
+        "compacting context",
+        "in progress",
+    ]
+
+    def is_busy(self) -> bool:
+        """Checks if the application is currently actively working on a prompt."""
+        window_text = self.adapter.get_window_text_content(self.name)
+        if not window_text:
+            return False
+        text_lower = window_text.lower()
+        return any(kw in text_lower for kw in self.BUSY_KEYWORDS)
+
     def check_status(self) -> Tuple[bool, int, Optional[str]]:
         """
         Inspects application window for rate limit status.
@@ -42,3 +58,4 @@ class TargetApp(ABC):
     def resume_task(self, prompt: str) -> bool:
         """Focus the application and inject the continuation prompt."""
         return self.adapter.inject_text_and_submit(self.name, prompt)
+
