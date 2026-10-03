@@ -1,0 +1,43 @@
+# DeskResumer Configuration
+
+# Monitoring settings
+monitoring:
+  # Target applications to monitor: "chatgpt", "antigravity", or "all"
+  target_apps: "all"
+  
+  # How often to check app window status (in seconds)
+  poll_interval_seconds: 30
+  
+  # Additional buffer time added to the parsed reset time (in seconds)
+  # Quota counters often have 1-2 minutes clock drift on server side
+  safety_buffer_seconds: 120
+
+# Resumption prompt behavior
+resumption:
+  # Message injected into the chat prompt input when cooldown completes
+  default_prompt: "Continue working on the task from where you left off."
+  
+  # Delay (in seconds) between focusing the window and typing the prompt
+  focus_delay_seconds: 1.5
+
+# Sleep prevention (Keep-Awake)
+power:
+  # Whether to prevent laptop sleep during cooldowns
+  prevent_sleep: true
+  
+  # Method on macOS: "caffeinate"
+  # Method on Windows: "SetThreadExecutionState"
+  keep_display_on: false  # If false, allows display to turn off while keeping CPU running
+
+# Remote alerts & notifications (optional)
+notifications:
+  enabled: false
+  
+  # Discord Webhook integration
+  discord:
+    webhook_url: ""
+    
+  # Telegram Bot integration
+  telegram:
+    bot_token: ""
+    chat_id: ""
