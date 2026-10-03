@@ -13,6 +13,7 @@ from .targets import get_configured_targets
 from .core.parser import CooldownParser
 from .core.notifier import Notifier
 from .core.queue import TaskQueue
+from .core.service import ServiceManager
 
 
 def load_config(config_path: str = "config.yaml") -> dict:
@@ -101,7 +102,18 @@ def main():
         "--file", default="TASKS.md", help="Checklist file to inspect"
     )
 
+    # Command: service
+    service_p = subparsers.add_parser(
+        "service", help="Manage background OS service (launchd on Mac, Task Scheduler on Windows)"
+    )
+    service_p.add_argument(
+        "action",
+        choices=["install", "start", "stop", "status", "uninstall"],
+        help="Action to perform on the service",
+    )
+
     args = parser.parse_args()
+
 
     if not args.command or args.command == "watch":
         cfg = load_config(args.config)
@@ -182,6 +194,20 @@ def main():
         print(f"📋 Checklist Progress ({args.file}):")
         print(f"• Completed: {done}/{total} ({(done / total * 100) if total else 0:.0f}%)")
         print(f"• Next up: {next_task or 'All tasks completed! 🎉'}\n")
+
+    elif args.command == "service":
+        action = args.action
+        if action == "install":
+            ServiceManager.install()
+        elif action == "start":
+            ServiceManager.start()
+        elif action == "stop":
+            ServiceManager.stop()
+        elif action == "status":
+            ServiceManager.status()
+        elif action == "uninstall":
+            ServiceManager.uninstall()
+
 
 
 if __name__ == "__main__":
