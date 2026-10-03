@@ -61,15 +61,44 @@ Edit `config.yaml` to specify:
 ### Usage
 
 ```bash
-# Run in watch mode (interactive)
-desk-resumer watch
+# 1. Start the watchdog in queue mode (processes TASKS.md automatically)
+desk-resumer watch --queue TASKS.md
 
-# Test window detection without waiting
+# 2. Check task checklist progress
+desk-resumer queue-status
+
+# 3. Test open window detection
 desk-resumer test-detect
 
-# Run with mobile notifications enabled
-desk-resumer watch --notify
+# 4. Run as a persistent background OS service (survives terminal close)
+desk-resumer service install
+desk-resumer service start
+desk-resumer service status
+
+# 5. Test mobile alerts
+desk-resumer test-notify --message "Testing mobile alert"
 ```
+
+---
+
+## 📱 Mobile Alerts & Two-Way Telegram Control
+
+- **Push Notifications via ntfy.sh**: Zero account setup. Just subscribe to your topic on iOS/Android.
+- **Two-Way Remote Control via Telegram**: Send commands from your phone while away:
+  - `/status` – Live target states, active step & remaining cooldown.
+  - `/skip` – Skip current task in `TASKS.md` if stuck.
+  - `/pause` / `/resume` – Pause or unpause autonomous execution.
+  - `/trigger` – Force injection into the active app.
+
+---
+
+## 🪟 Windows PC Support
+
+DeskResumer is fully tested on Windows 10 and 11 using native Win32 `SetThreadExecutionState` and `pywinauto`.
+- Run `setup-windows.bat` for one-click installation.
+- Double-click `run-windows.bat` to launch.
+- See the complete [Windows Setup Guide](docs/WINDOWS_GUIDE.md) for details.
+
 
 ---
 
