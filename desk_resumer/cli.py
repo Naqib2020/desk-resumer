@@ -112,7 +112,20 @@ def main():
         help="Action to perform on the service",
     )
 
+    # Command: app (Studio UI)
+
+    app_p = subparsers.add_parser(
+        "app", help="Launch the DeskResumer Studio visual desktop application"
+    )
+    app_p.add_argument(
+        "--port", type=int, default=5242, help="Port to run UI on (default: 5242)"
+    )
+    app_p.add_argument(
+        "--no-browser", action="store_true", help="Do not open browser automatically"
+    )
+
     args = parser.parse_args()
+
 
 
     if not args.command or args.command == "watch":
@@ -207,6 +220,11 @@ def main():
             ServiceManager.status()
         elif action == "uninstall":
             ServiceManager.uninstall()
+
+    elif args.command == "app":
+        from .ui import start_ui_server
+        start_ui_server(port=args.port, open_browser=not args.no_browser)
+
 
 
 
