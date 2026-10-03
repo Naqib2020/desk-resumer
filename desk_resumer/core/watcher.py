@@ -1,5 +1,5 @@
 """
-Main watchdog loop monitoring AI desktop applications with Rate-Limit recovery & Queue support.
+Main watchdog loop monitoring AI desktop applications with Rate-Limit recovery, Queue & Telegram Bot support.
 """
 
 import time
@@ -10,6 +10,7 @@ from ..platform import get_platform_adapter
 from ..targets import get_configured_targets, TargetApp
 from .notifier import Notifier
 from .queue import TaskQueue
+from .bot import TelegramRemoteBot
 
 
 class Watchdog:
@@ -37,6 +38,10 @@ class Watchdog:
         # Queue / Checklist mode
         self.queue = TaskQueue(queue_path) if queue_path else None
         self.active_tasks: Dict[str, Optional[str]] = {t.name: None for t in self.targets}
+        self.paused = False
+
+        # Two-Way Telegram Remote Control
+        self.bot = TelegramRemoteBot(config.get("notifications", {}), self)
 
     def run(self):
         """Main monitoring loop."""
@@ -53,14 +58,19 @@ class Watchdog:
             print("• Queue Mode: Inactive (Standard auto-resume)")
         print("=" * 60)
 
+        # Start two-way Telegram listener if configured
+        self.bot.start()
+
         try:
             while True:
-                for target in self.targets:
-                    self._check_target(target)
+                if not self.paused:
+                    for target in self.targets:
+                        self._check_target(target)
                 time.sleep(self.poll_interval)
         except KeyboardInterrupt:
             print("\n[Watchdog] Interrupted by user. Cleaning up...")
         finally:
+            self.bot.stop()
             self.adapter.stop_wake_lock()
             print("[Watchdog] Stopped.")
 
@@ -132,7 +142,6 @@ class Watchdog:
 
     def _handle_queue_step(self, target: TargetApp):
         """Processes sequential tasks from the queue checklist."""
-        # If target app is currently working on something, let it continue
         if target.is_busy():
             return
 
@@ -166,7 +175,6 @@ class Watchdog:
             print(f"[Queue] Failed to inject next task into {target.name}")
 
     def _sleep_countdown(self, total_seconds: int, app_name: str):
-        """Displays periodic status while sleeping."""
         remaining = total_seconds
         step = 60
         while remaining > 0:
@@ -177,3 +185,62 @@ class Watchdog:
             time.sleep(sleep_chunk)
             remaining -= sleep_chunk
         print()
+
+    # --- Remote Control Bot Methods ---
+
+    def get_status_summary(self) -> str:
+        lines = ["*📊 DeskResumer Live Status*"]
+        lines.append(f"• Watchdog State: {'*Paused*' if self.paused else '*Active*'}")
+
+        for t in self.targets:
+            running = t.is_running()
+            if not running:
+                lines.append(f"• `{t.name}`: Offline")
+                continue
+
+            busy = t.is_busy()
+            is_limited, wait_sec, desc = t.check_status()
+            current_task = self.active_tasks.get(t.name)
+
+            status = "⏳ Rate Limited" if is_limited else ("⚙️ Busy" if busy else "🟢 Idle")
+            lines.append(f"• `{t.name}`: {status}")
+            if is_limited:
+                lines.append(f"  └ Cooldown: {wait_sec // 60}m remaining ({desc})")
+            if current_task:
+                lines.append(f"  └ Task: _{current_task}_")
+
+        if self.queue and self.queue.exists():
+            done, total = self.queue.get_progress()
+            next_t = self.queue.get_next_task()
+            lines.append(f"\n*📋 Queue Progress:* {done}/{total} completed")
+            if next_t:
+                lines.append(f"Next: _{next_t}_")
+
+        return "\n".join(lines)
+
+    def skip_current_task(self) -> str:
+        if not self.queue or not self.queue.exists():
+            return "No active queue file found."
+
+        for app_name, task in self.active_tasks.items():
+            if task:
+                self.queue.mark_completed(task)
+                self.active_tasks[app_name] = None
+                return f"⏩ Skipped task: _{task}_"
+
+        next_t = self.queue.get_next_task()
+        if next_t:
+            self.queue.mark_completed(next_t)
+            return f"⏩ Skipped pending task: _{next_t}_"
+
+        return "No pending tasks to skip."
+
+    def force_trigger_prompt(self) -> str:
+        for t in self.targets:
+            if t.is_running():
+                prompt = self.queue.get_next_task() if (self.queue and self.queue.exists()) else self.default_prompt
+                success = t.resume_task(prompt)
+                if success:
+                    return f"⚡ Forced prompt injection into `{t.name}`:\n_{prompt}_"
+                return f"❌ Failed to focus/inject prompt into `{t.name}`."
+        return "No running target applications found."
