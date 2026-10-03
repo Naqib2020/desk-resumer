@@ -3,581 +3,871 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DeskResumer Studio</title>
+  <title>DeskResumer // Autonomous Supervisor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #09090b;
-      --card-bg: #121215;
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-hover: rgba(255, 255, 255, 0.12);
-      --text: #f4f4f5;
-      --text-muted: #71717a;
-      --accent-emerald: #10b981;
-      --accent-emerald-glow: rgba(16, 185, 129, 0.2);
-      --accent-amber: #f59e0b;
-      --accent-amber-glow: rgba(245, 158, 11, 0.2);
-      --accent-blue: #3b82f6;
-      --accent-indigo: #6366f1;
-      --accent-red: #ef4444;
+      --bg: #090a0d;
+      --surface-1: #0f1117;
+      --surface-2: #161922;
+      --surface-3: #1f2330;
+      --border-subtle: #1c202c;
+      --border-strong: #2a3042;
+      --border-focus: #3b82f6;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-tertiary: #64748b;
+      
+      --signal-green: #10b981;
+      --signal-green-dim: rgba(16, 185, 129, 0.12);
+      --signal-amber: #f59e0b;
+      --signal-amber-dim: rgba(245, 158, 11, 0.12);
+      --signal-blue: #0284c7;
+      --signal-blue-dim: rgba(2, 132, 199, 0.12);
+      --signal-red: #ef4444;
+      --signal-red-dim: rgba(239, 68, 68, 0.12);
+
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'Geist Mono', 'SF Mono', Menlo, Monaco, monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
+      min-height: 100vh;
     }
 
-    /* Top Navigation */
+    /* Top Bar */
     header {
+      background: var(--surface-1);
+      border-bottom: 1px solid var(--border-subtle);
+      height: 52px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 2rem;
-      border-bottom: 1px solid var(--card-border);
-      background: rgba(18, 18, 21, 0.8);
-      backdrop-filter: blur(12px);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      padding: 0 1.5rem;
+      user-select: none;
     }
 
-    .brand {
+    .brand-cluster {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
+      gap: 0.85rem;
     }
 
-    .brand-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #10b981, #6366f1);
-      border-radius: 8px;
+    .brand-mark {
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
-      box-shadow: 0 0 15px var(--accent-emerald-glow);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
     }
 
-    .top-actions {
+    .brand-mark-inner {
+      width: 8px;
+      height: 8px;
+      background: #000;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    }
+
+    .brand-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+
+    .brand-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      border-left: 1px solid var(--border-strong);
+      padding-left: 0.75rem;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Control Buttons & Inputs */
+    .btn {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 0 0.85rem;
+      height: 30px;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid var(--border-strong);
+      background: var(--surface-2);
+      color: var(--text-primary);
+    }
+    .btn:hover { background: var(--surface-3); border-color: #3b4459; }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-action-primary {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+      font-weight: 600;
+    }
+    .btn-action-primary:hover {
+      background: #e2e8f0;
+      border-color: #e2e8f0;
+    }
+
+    .btn-action-stop {
+      background: var(--signal-red-dim);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .btn-action-stop:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .btn-icon-only {
+      width: 30px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    /* Layout */
+    .app-viewport {
+      flex: 1;
+      max-width: 1080px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* System Status Ribbon */
+    .status-ribbon {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .ribbon-left {
       display: flex;
       align-items: center;
       gap: 1rem;
     }
 
-    .btn {
-      display: inline-flex;
+    .status-indicator {
+      display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.6rem 1.2rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      position: relative;
+    }
+    .dot-active { background: var(--signal-green); }
+    .dot-active::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: var(--signal-green);
+      opacity: 0.4;
+      animation: pulse-ring 2s infinite ease-out;
+    }
+    .dot-idle { background: var(--text-tertiary); }
+    .dot-amber { background: var(--signal-amber); }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+
+    .status-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .pill {
+      font-family: var(--font-mono);
+      font-size: 10px;
       font-weight: 600;
-      cursor: pointer;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
-      transition: all 0.2s ease;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
-    .btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--card-hover); }
+    .pill-green { background: var(--signal-green-dim); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
+    .pill-amber { background: var(--signal-amber-dim); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); }
+    .pill-zinc { background: var(--surface-3); color: var(--text-secondary); border: 1px solid var(--border-strong); }
 
-    .btn-primary {
-      background: #10b981;
-      border-color: #10b981;
-      color: #000;
-    }
-    .btn-primary:hover {
-      background: #059669;
-      border-color: #059669;
-      box-shadow: 0 0 16px var(--accent-emerald-glow);
+    /* Target Application Grid */
+    .grid-duo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
     }
 
-    .btn-danger {
-      background: rgba(239, 68, 68, 0.15);
-      border-color: rgba(239, 68, 68, 0.3);
-      color: #f87171;
-    }
-    .btn-danger:hover {
-      background: rgba(239, 68, 68, 0.25);
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
-      width: 100%;
+    .module-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
-      gap: 2rem;
-    }
-
-    /* Cards Grid */
-    .grid-2 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.5rem;
       position: relative;
       overflow: hidden;
-      transition: border-color 0.2s ease;
     }
-    .card:hover { border-color: var(--card-hover); }
 
-    .card-header {
+    .card-top {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.25rem;
     }
 
-    .card-title {
-      font-size: 1.1rem;
+    .card-top-identity {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
       font-weight: 600;
+      font-size: 13px;
+    }
+
+    .card-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      flex: 1;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+    }
+    .data-key { color: var(--text-tertiary); }
+    .data-val {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-primary);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card-bottom-actions {
+      padding: 0.75rem 1.25rem;
+      background: rgba(0, 0, 0, 0.15);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Task Queue Cockpit */
+    .pipeline-container {
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .pipeline-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pipeline-title {
+      font-weight: 600;
+      font-size: 13px;
       display: flex;
       align-items: center;
       gap: 0.6rem;
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.25rem 0.65rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .badge-green { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .badge-amber { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-gray { background: rgba(113, 113, 122, 0.15); color: #a1a1aa; border: 1px solid rgba(113, 113, 122, 0.3); }
-
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 8px currentColor;
-    }
-
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      font-size: 0.875rem;
-    }
-    .stat-label { color: var(--text-muted); }
-    .stat-value { font-weight: 500; font-family: 'JetBrains Mono', monospace; }
-
-    /* Task Queue Section */
-    .queue-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-
-    .progress-bar-container {
+    .meter-track {
+      background: var(--surface-3);
+      height: 3px;
       width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 1.5rem;
+      position: relative;
     }
-    .progress-bar-fill {
+    .meter-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
       height: 100%;
-      background: linear-gradient(90deg, #10b981, #6366f1);
-      width: 0%;
+      background: #fff;
       transition: width 0.3s ease;
     }
 
-    .task-list {
+    .task-rows-wrapper {
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 0.5rem 0;
+    }
+
+    .task-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1.25rem;
+      transition: background 0.1s;
+      gap: 0.75rem;
+    }
+    .task-row:hover {
+      background: var(--surface-2);
+    }
+
+    .task-main {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      flex: 1;
+    }
+
+    .custom-checkbox {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: 3px;
+      background: transparent;
+      cursor: pointer;
+      display: inline-grid;
+      place-content: center;
+      margin-top: 2px;
+      transition: all 0.12s;
+    }
+    .custom-checkbox:checked {
+      background: #fff;
+      border-color: #fff;
+    }
+    .custom-checkbox:checked::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #000;
+    }
+
+    .task-label {
+      font-size: 12px;
+      color: var(--text-primary);
+      flex: 1;
+    }
+    .task-label.done {
+      color: var(--text-tertiary);
+      text-decoration: line-through;
+    }
+
+    .task-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .task-action-btn:hover {
+      color: #f87171;
+      background: var(--signal-red-dim);
+    }
+
+    .pipeline-input-bar {
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(0, 0, 0, 0.2);
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .input-clean {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      height: 32px;
+      padding: 0 0.85rem;
+      border-radius: 5px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .input-clean:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Terminal Console Stream */
+    .console-module {
+      background: #000;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .console-bar {
+      background: #08090b;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #141720;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .console-stream {
+      padding: 0.85rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+      color: #94a3b8;
+      height: 130px;
+      overflow-y: auto;
+    }
+
+    .console-line {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .console-ts { color: var(--text-tertiary); user-select: none; }
+    .console-msg { flex: 1; word-break: break-all; }
+
+    /* Modal Sheet */
+    .drawer-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .drawer-scrim.visible { display: flex; }
+
+    .drawer-window {
+      background: var(--surface-1);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      width: 500px;
+      max-width: 95%;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+    }
+
+    .drawer-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .drawer-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .field-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* Toast Notification Overlay */
+    .toast-rack {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 2000;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      max-height: 280px;
-      overflow-y: auto;
-    }
-
-    .task-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1rem;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      transition: background 0.15s;
-    }
-    .task-item:hover { background: rgba(255, 255, 255, 0.04); }
-
-    .task-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex: 1;
-    }
-
-    .task-checkbox {
-      width: 18px;
-      height: 18px;
-      accent-color: #10b981;
-      cursor: pointer;
-    }
-
-    .task-text {
-      font-size: 0.875rem;
-    }
-    .task-text.completed {
-      text-decoration: line-through;
-      color: var(--text-muted);
-    }
-
-    .task-delete-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.875rem;
-    }
-    .task-delete-btn:hover { color: var(--accent-red); background: rgba(239, 68, 68, 0.1); }
-
-    .add-task-row {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-    .input-field {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 0.6rem 1rem;
-      color: var(--text);
-      font-size: 0.875rem;
-      font-family: inherit;
-    }
-    .input-field:focus { outline: none; border-color: #10b981; }
-
-    /* Console Logs */
-    .log-box {
-      background: #000;
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 1rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      height: 140px;
-      overflow-y: auto;
-      color: #a1a1aa;
-    }
-    .log-line { margin-bottom: 0.2rem; }
-    .log-line.alert { color: #fbbf24; }
-    .log-line.success { color: #34d399; }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease;
     }
-    .modal-overlay.open { opacity: 1; pointer-events: auto; }
 
-    .modal-content {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 2rem;
-      max-width: 540px;
-      width: 90%;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-    }
-    .modal-header {
+    .toast-item {
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      padding: 0.65rem 1rem;
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
+      gap: 0.6rem;
+      animation: toast-slide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: auto;
     }
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
-    .form-label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 0.4rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+
+    @keyframes toast-slide {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
   </style>
 </head>
 <body>
 
+  <!-- Header -->
   <header>
-    <div class="brand">
-      <div class="brand-icon">⚡</div>
-      <span>DeskResumer Studio</span>
+    <div class="brand-cluster">
+      <div class="brand-mark"><div class="brand-mark-inner"></div></div>
+      <div class="brand-title">DeskResumer</div>
+      <div class="brand-sub">Autonomous Cooldown Supervisor</div>
     </div>
-    <div class="top-actions">
-      <button id="toggle-watchdog-btn" class="btn btn-primary" onclick="toggleWatchdog()">
-        <span class="pulse-dot"></span>
-        <span id="watchdog-btn-text">Start Watchdog</span>
+    <div class="header-actions">
+      <button class="btn" onclick="openDrawer()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preferences
       </button>
-      <button class="btn" onclick="openSettingsModal()">⚙️ Settings</button>
+      <button id="toggle-watchdog-btn" class="btn btn-action-primary" onclick="toggleWatchdog()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span id="watchdog-btn-label">Start Watchdog</span>
+      </button>
     </div>
   </header>
 
-  <main class="container">
+  <!-- Main Viewport -->
+  <main class="app-viewport">
 
-    <!-- Target Applications Grid -->
-    <section class="grid-2">
-      <!-- ChatGPT Card -->
-      <div class="card" id="chatgpt-card">
-        <div class="card-header">
-          <div class="card-title">
-            <span>🤖</span>
+    <!-- Status Ribbon -->
+    <div class="status-ribbon">
+      <div class="ribbon-left">
+        <div class="status-indicator">
+          <div class="dot dot-idle" id="ribbon-dot"></div>
+          <span id="ribbon-state-text" style="font-weight: 600;">Watchdog Stopped</span>
+        </div>
+        <span class="status-meta" id="ribbon-meta">Standby • Monitoring disabled</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span class="pill pill-zinc" id="power-lock-pill">caffeinate: idle</span>
+      </div>
+    </div>
+
+    <!-- Target Apps Grid -->
+    <div class="grid-duo">
+
+      <!-- ChatGPT Channel -->
+      <div class="module-card">
+        <div class="card-top">
+          <div class="card-top-identity">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
             <span>ChatGPT / Codex</span>
           </div>
-          <span class="badge badge-gray" id="chatgpt-badge">Checking...</span>
+          <span class="pill pill-zinc" id="chatgpt-status-pill">OFFLINE</span>
         </div>
-        <div class="stat-row">
-          <span class="stat-label">Process State</span>
-          <span class="stat-value" id="chatgpt-running">-</span>
+        <div class="card-body">
+          <div class="data-row">
+            <span class="data-key">Application State</span>
+            <span class="data-val" id="chatgpt-process-val">Not Running</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Activity Status</span>
+            <span class="data-val" id="chatgpt-activity-val">Idle</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Quota Reset Window</span>
+            <span class="data-val" id="chatgpt-cooldown-val">None (Active)</span>
+          </div>
         </div>
-        <div class="stat-row">
-          <span class="stat-label">Activity Status</span>
-          <span class="stat-value" id="chatgpt-status">-</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Limit Cooldown</span>
-          <span class="stat-value" id="chatgpt-cooldown">None</span>
-        </div>
-        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-          <button class="btn" style="flex:1" onclick="testResume('chatgpt')">⚡ Test Prompt</button>
+        <div class="card-bottom-actions">
+          <button class="btn" onclick="testPrompt('chatgpt')">Trigger Prompt</button>
         </div>
       </div>
 
-      <!-- Antigravity Card -->
-      <div class="card" id="antigravity-card">
-        <div class="card-header">
-          <div class="card-title">
-            <span>⚡</span>
+      <!-- Antigravity Channel -->
+      <div class="module-card">
+        <div class="card-top">
+          <div class="card-top-identity">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             <span>Antigravity</span>
           </div>
-          <span class="badge badge-gray" id="antigravity-badge">Checking...</span>
+          <span class="pill pill-zinc" id="antigravity-status-pill">OFFLINE</span>
         </div>
-        <div class="stat-row">
-          <span class="stat-label">Process State</span>
-          <span class="stat-value" id="antigravity-running">-</span>
+        <div class="card-body">
+          <div class="data-row">
+            <span class="data-key">Application State</span>
+            <span class="data-val" id="antigravity-process-val">Not Running</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Activity Status</span>
+            <span class="data-val" id="antigravity-activity-val">Idle</span>
+          </div>
+          <div class="data-row">
+            <span class="data-key">Quota Reset Window</span>
+            <span class="data-val" id="antigravity-cooldown-val">None (Active)</span>
+          </div>
         </div>
-        <div class="stat-row">
-          <span class="stat-label">Activity Status</span>
-          <span class="stat-value" id="antigravity-status">-</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Limit Cooldown</span>
-          <span class="stat-value" id="antigravity-cooldown">None</span>
-        </div>
-        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-          <button class="btn" style="flex:1" onclick="testResume('antigravity')">⚡ Test Prompt</button>
+        <div class="card-bottom-actions">
+          <button class="btn" onclick="testPrompt('antigravity')">Trigger Prompt</button>
         </div>
       </div>
-    </section>
 
-    <!-- Task Queue Section -->
-    <section class="card">
-      <div class="queue-header">
-        <div>
-          <h2 style="font-size: 1.1rem; font-weight: 600;">📋 Task Queue (TASKS.md)</h2>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;" id="queue-summary">Loading tasks...</p>
+    </div>
+
+    <!-- Pipeline Checklist -->
+    <div class="pipeline-container">
+      <div class="pipeline-header">
+        <div class="pipeline-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Execution Pipeline</span>
+          <span class="status-meta" id="pipeline-file-label">(TASKS.md)</span>
         </div>
-        <span class="stat-value" id="queue-percentage">0%</span>
+        <span class="data-val" id="pipeline-progress-fraction">0 / 0</span>
       </div>
 
-      <div class="progress-bar-container">
-        <div class="progress-bar-fill" id="queue-progress-bar"></div>
+      <div class="meter-track">
+        <div class="meter-fill" id="pipeline-meter" style="width: 0%;"></div>
       </div>
 
-      <div class="task-list" id="task-list">
+      <div class="task-rows-wrapper" id="pipeline-task-list">
         <!-- Rendered by JS -->
       </div>
 
-      <form class="add-task-row" onsubmit="addTask(event)">
-        <input type="text" id="new-task-input" class="input-field" placeholder="Enter next task description..." required>
-        <button type="submit" class="btn btn-primary">+ Add Task</button>
+      <form class="pipeline-input-bar" onsubmit="handleAddTask(event)">
+        <input type="text" id="pipeline-new-input" class="input-clean" placeholder="Append subtask to pipeline..." required autocomplete="off">
+        <button type="submit" class="btn btn-action-primary">Add Task</button>
       </form>
-    </section>
+    </div>
 
-    <!-- Live Event Logs -->
-    <section class="card">
-      <div class="card-header">
-        <h3 style="font-size: 0.95rem; font-weight: 600;">Activity Logs</h3>
-        <button class="btn" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;" onclick="testNotify()">📲 Test Mobile Alert</button>
+    <!-- Console Stream -->
+    <div class="console-module">
+      <div class="console-bar">
+        <span>DAEMON EVENT STREAM</span>
+        <button class="btn" style="height: 22px; font-size: 11px; padding: 0 0.5rem;" onclick="testMobileAlert()">
+          Test Phone Alert
+        </button>
       </div>
-      <div class="log-box" id="log-box">
-        <div class="log-line">Initializing DeskResumer Studio...</div>
+      <div class="console-stream" id="console-stream">
+        <div class="console-line"><span class="console-ts">00:00:00</span><span class="console-msg">System initialized. Awaiting daemon start.</span></div>
       </div>
-    </section>
+    </div>
 
   </main>
 
-  <!-- Settings Modal -->
-  <div class="modal-overlay" id="settings-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 style="font-size: 1.25rem; font-weight: 700;">Settings</h2>
-        <button class="btn" style="padding: 0.3rem 0.6rem;" onclick="closeSettingsModal()">✕</button>
+  <!-- Preferences Drawer -->
+  <div class="drawer-scrim" id="drawer-scrim" onclick="handleScrimClick(event)">
+    <div class="drawer-window">
+      <div class="drawer-header">
+        <span>Preferences & Monitoring Channels</span>
+        <button class="btn btn-icon-only" onclick="closeDrawer()">✕</button>
       </div>
-
-      <form onsubmit="saveSettings(event)">
-        <div class="form-group">
-          <label class="form-label">Target Applications</label>
-          <select id="setting-targets" class="input-field" style="width: 100%">
-            <option value="all">All (ChatGPT & Antigravity)</option>
-            <option value="chatgpt">ChatGPT Only</option>
+      <form class="drawer-body" onsubmit="handleSaveSettings(event)">
+        
+        <div class="field-group">
+          <label class="field-label">Active Monitoring Targets</label>
+          <select id="field-targets" class="input-clean" style="height: 34px;">
+            <option value="all">All Channels (ChatGPT & Antigravity)</option>
+            <option value="chatgpt">ChatGPT / Codex Only</option>
             <option value="antigravity">Antigravity Only</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Mobile Alert Topic (ntfy.sh)</label>
-          <input type="text" id="setting-ntfy" class="input-field" style="width: 100%" placeholder="e.g. desk-resumer-naqib">
-          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">Subscribe to this topic in the free iOS/Android ntfy app.</p>
+        <div class="field-group">
+          <label class="field-label">ntfy.sh Mobile Push Topic</label>
+          <input type="text" id="field-ntfy" class="input-clean" placeholder="e.g. desk-resumer-naqib">
+          <span class="field-hint">Subscribe to this topic name in the free ntfy mobile app.</span>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Safety Buffer (Seconds)</label>
-          <input type="number" id="setting-buffer" class="input-field" style="width: 100%" value="120">
+        <div class="field-group">
+          <label class="field-label">Safety Cooldown Buffer (Seconds)</label>
+          <input type="number" id="field-buffer" class="input-clean" value="120" min="0" step="10">
+          <span class="field-hint">Extra wait time added after limit expires to account for quota clock drift.</span>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
-          <button type="button" class="btn" onclick="closeSettingsModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Settings</button>
+        <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem;">
+          <button type="button" class="btn" onclick="closeDrawer()">Cancel</button>
+          <button type="submit" class="btn btn-action-primary">Save Changes</button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- Toast Rack -->
+  <div class="toast-rack" id="toast-rack"></div>
+
   <script>
     let isWatchdogRunning = false;
 
-    async function fetchStatus() {
+    function toast(text) {
+      const rack = document.getElementById('toast-rack');
+      const item = document.createElement('div');
+      item.className = 'toast-item';
+      item.innerHTML = `<span>${text}</span>`;
+      rack.appendChild(item);
+      setTimeout(() => {
+        item.style.opacity = '0';
+        item.style.transition = 'opacity 0.2s';
+        setTimeout(() => item.remove(), 200);
+      }, 3000);
+    }
+
+    async function syncStatus() {
       try {
         const res = await fetch('/api/status');
         const data = await res.json();
 
-        // Update Watchdog Button
+        // Watchdog Toggle State
         isWatchdogRunning = data.watchdog_running;
         const btn = document.getElementById('toggle-watchdog-btn');
-        const btnText = document.getElementById('watchdog-btn-text');
+        const btnLabel = document.getElementById('watchdog-btn-label');
+        const ribbonDot = document.getElementById('ribbon-dot');
+        const ribbonStateText = document.getElementById('ribbon-state-text');
+        const ribbonMeta = document.getElementById('ribbon-meta');
+        const powerPill = document.getElementById('power-lock-pill');
+
         if (isWatchdogRunning) {
-          btn.className = 'btn btn-danger';
-          btnText.textContent = 'Stop Watchdog';
+          btn.className = 'btn btn-action-stop';
+          btnLabel.textContent = 'Stop Watchdog';
+          ribbonDot.className = 'dot dot-active';
+          ribbonStateText.textContent = 'Monitoring Active';
+          ribbonMeta.textContent = 'Scanning channels every 30s • Sleep Inhibit Armed';
+          powerPill.className = 'pill pill-green';
+          powerPill.textContent = 'caffeinate: active';
         } else {
-          btn.className = 'btn btn-primary';
-          btnText.textContent = 'Start Watchdog';
+          btn.className = 'btn btn-action-primary';
+          btnLabel.textContent = 'Start Watchdog';
+          ribbonDot.className = 'dot dot-idle';
+          ribbonStateText.textContent = 'Watchdog Stopped';
+          ribbonMeta.textContent = 'Standby • Monitoring disabled';
+          powerPill.className = 'pill pill-zinc';
+          powerPill.textContent = 'caffeinate: idle';
         }
 
-        // Update Targets
+        // Targets
         data.targets.forEach(t => {
           const prefix = t.name.toLowerCase();
-          const runningEl = document.getElementById(`${prefix}-running`);
-          const statusEl = document.getElementById(`${prefix}-status`);
-          const badgeEl = document.getElementById(`${prefix}-badge`);
-          const cooldownEl = document.getElementById(`${prefix}-cooldown`);
+          const procEl = document.getElementById(`${prefix}-process-val`);
+          const actEl = document.getElementById(`${prefix}-activity-val`);
+          const cdEl = document.getElementById(`${prefix}-cooldown-val`);
+          const pillEl = document.getElementById(`${prefix}-status-pill`);
 
-          if (runningEl) runningEl.textContent = t.running ? 'Running' : 'Offline';
+          if (procEl) procEl.textContent = t.running ? 'Process Active' : 'Not Running';
 
           if (!t.running) {
-            badgeEl.className = 'badge badge-gray';
-            badgeEl.textContent = 'Offline';
-            statusEl.textContent = 'Application Closed';
+            pillEl.className = 'pill pill-zinc';
+            pillEl.textContent = 'OFFLINE';
+            actEl.textContent = 'Closed';
+            cdEl.textContent = 'None';
           } else if (t.is_limited) {
-            badgeEl.className = 'badge badge-amber';
-            badgeEl.textContent = 'Rate Limited';
-            statusEl.textContent = `Quota Cooldown`;
-            cooldownEl.textContent = `${Math.round(t.wait_seconds / 60)}m left (${t.desc || ''})`;
+            pillEl.className = 'pill pill-amber';
+            pillEl.textContent = 'COOLDOWN';
+            actEl.textContent = 'Quota Limit Reached';
+            cdEl.textContent = `${Math.round(t.wait_seconds / 60)}m left (${t.desc || ''})`;
           } else if (t.busy) {
-            badgeEl.className = 'badge badge-green';
-            badgeEl.textContent = 'Generating';
-            statusEl.textContent = 'Actively Working';
+            pillEl.className = 'pill pill-green';
+            pillEl.textContent = 'BUSY';
+            actEl.textContent = 'Generating / Working';
+            cdEl.textContent = 'None';
           } else {
-            badgeEl.className = 'badge badge-green';
-            badgeEl.textContent = 'Idle';
-            statusEl.textContent = 'Ready for Prompts';
+            pillEl.className = 'pill pill-green';
+            pillEl.textContent = 'READY';
+            actEl.textContent = 'Idle (Awaiting task)';
+            cdEl.textContent = 'None';
           }
         });
 
-        // Update Logs
+        // Logs
         if (data.logs && data.logs.length > 0) {
-          const logBox = document.getElementById('log-box');
-          logBox.innerHTML = data.logs.map(l => `<div class="log-line">${l}</div>`).join('');
-          logBox.scrollTop = logBox.scrollHeight;
+          const stream = document.getElementById('console-stream');
+          stream.innerHTML = data.logs.map(line => {
+            const match = line.match(/^\[(.*?)\] (.*)$/);
+            const ts = match ? match[1] : '--:--:--';
+            const msg = match ? match[2] : line;
+            return `<div class="console-line"><span class="console-ts">${ts}</span><span class="console-msg">${msg}</span></div>`;
+          }).join('');
+          stream.scrollTop = stream.scrollHeight;
         }
 
       } catch (err) {
-        console.error('Fetch status error:', err);
+        console.error('Status sync error:', err);
       }
     }
 
-    async function fetchTasks() {
+    async function syncTasks() {
       try {
         const res = await fetch('/api/tasks');
         const data = await res.json();
-        const taskList = document.getElementById('task-list');
+        const list = document.getElementById('pipeline-task-list');
 
         const tasks = data.tasks || [];
         const completed = tasks.filter(t => t.completed).length;
         const total = tasks.length;
         const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-        document.getElementById('queue-summary').textContent = `${completed} of ${total} tasks completed`;
-        document.getElementById('queue-percentage').textContent = `${percent}%`;
-        document.getElementById('queue-progress-bar').style.width = `${percent}%`;
+        document.getElementById('pipeline-progress-fraction').textContent = `${completed} / ${total} COMPLETED (${percent}%)`;
+        document.getElementById('pipeline-meter').style.width = `${percent}%`;
 
-        taskList.innerHTML = tasks.map(t => `
-          <div class="task-item">
-            <div class="task-left">
-              <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id})">
-              <span class="task-text ${t.completed ? 'completed' : ''}">${t.text}</span>
+        list.innerHTML = tasks.map(t => `
+          <div class="task-row">
+            <div class="task-main">
+              <input type="checkbox" class="custom-checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id})">
+              <span class="task-label ${t.completed ? 'done' : ''}">${t.text}</span>
             </div>
-            <button class="task-delete-btn" onclick="deleteTask(${t.id})">✕</button>
+            <button class="task-action-btn" onclick="deleteTask(${t.id})" title="Remove item">✕</button>
           </div>
         `).join('');
 
       } catch (err) {
-        console.error('Fetch tasks error:', err);
+        console.error('Task sync error:', err);
       }
     }
 
@@ -588,7 +878,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
       });
-      fetchStatus();
+      toast(action === 'start' ? 'Watchdog service started' : 'Watchdog service stopped');
+      syncStatus();
     }
 
     async function toggleTask(id) {
@@ -597,12 +888,12 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
-      fetchTasks();
+      syncTasks();
     }
 
-    async function addTask(e) {
+    async function handleAddTask(e) {
       e.preventDefault();
-      const input = document.getElementById('new-task-input');
+      const input = document.getElementById('pipeline-new-input');
       const text = input.value.trim();
       if (!text) return;
 
@@ -612,7 +903,8 @@
         body: JSON.stringify({ text })
       });
       input.value = '';
-      fetchTasks();
+      toast(`Appended task to pipeline`);
+      syncTasks();
     }
 
     async function deleteTask(id) {
@@ -621,53 +913,58 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
-      fetchTasks();
+      toast(`Task removed`);
+      syncTasks();
     }
 
-    async function testResume(app) {
-      alert(`Injecting test prompt into ${app} in 2 seconds...`);
+    async function testPrompt(app) {
+      toast(`Injecting prompt into ${app}...`);
       await fetch('/api/test/resume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ app, prompt: 'Testing DeskResumer UI trigger.' })
+        body: JSON.stringify({ app, prompt: 'Testing DeskResumer trigger.' })
       });
-      fetchStatus();
+      syncStatus();
     }
 
-    async function testNotify() {
+    async function testMobileAlert() {
+      toast('Sending mobile test notification...');
       await fetch('/api/test/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: '⚡ Alert test from DeskResumer UI!' })
+        body: JSON.stringify({ message: 'DeskResumer: Mobile push test operational.' })
       });
-      alert('Test alert dispatched! Check your phone/browser.');
     }
 
-    async function openSettingsModal() {
+    async function openDrawer() {
       const res = await fetch('/api/settings');
       const cfg = await res.json();
-      document.getElementById('setting-targets').value = cfg.monitoring?.target_apps || 'all';
-      document.getElementById('setting-buffer').value = cfg.monitoring?.safety_buffer_seconds || 120;
-      document.getElementById('setting-ntfy').value = cfg.notifications?.ntfy?.topic || '';
-      document.getElementById('settings-modal').classList.add('open');
+      document.getElementById('field-targets').value = cfg.monitoring?.target_apps || 'all';
+      document.getElementById('field-buffer').value = cfg.monitoring?.safety_buffer_seconds || 120;
+      document.getElementById('field-ntfy').value = cfg.notifications?.ntfy?.topic || '';
+      document.getElementById('drawer-scrim').classList.add('visible');
     }
 
-    function closeSettingsModal() {
-      document.getElementById('settings-modal').classList.remove('open');
+    function closeDrawer() {
+      document.getElementById('drawer-scrim').classList.remove('visible');
     }
 
-    async function saveSettings(e) {
+    function handleScrimClick(e) {
+      if (e.target.id === 'drawer-scrim') closeDrawer();
+    }
+
+    async function handleSaveSettings(e) {
       e.preventDefault();
       const res = await fetch('/api/settings');
       const cfg = await res.json();
 
       cfg.monitoring = cfg.monitoring || {};
-      cfg.monitoring.target_apps = document.getElementById('setting-targets').value;
-      cfg.monitoring.safety_buffer_seconds = parseInt(document.getElementById('setting-buffer').value, 10);
+      cfg.monitoring.target_apps = document.getElementById('field-targets').value;
+      cfg.monitoring.safety_buffer_seconds = parseInt(document.getElementById('field-buffer').value, 10);
 
       cfg.notifications = cfg.notifications || {};
       cfg.notifications.enabled = true;
-      cfg.notifications.ntfy = { topic: document.getElementById('setting-ntfy').value.trim() };
+      cfg.notifications.ntfy = { topic: document.getElementById('field-ntfy').value.trim() };
 
       await fetch('/api/settings', {
         method: 'POST',
@@ -675,15 +972,14 @@
         body: JSON.stringify(cfg)
       });
 
-      closeSettingsModal();
-      alert('Settings saved successfully!');
+      closeDrawer();
+      toast('Preferences saved to config.yaml');
     }
 
-    // Polling cycles
-    fetchStatus();
-    fetchTasks();
-    setInterval(fetchStatus, 3000);
-    setInterval(fetchTasks, 5000);
+    syncStatus();
+    syncTasks();
+    setInterval(syncStatus, 3000);
+    setInterval(syncTasks, 5000);
   </script>
 </body>
 </html>
