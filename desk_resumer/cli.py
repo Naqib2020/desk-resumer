@@ -112,8 +112,7 @@ def main():
         help="Action to perform on the service",
     )
 
-    # Command: app (Studio UI)
-
+    # Command: app (Studio Web UI)
     app_p = subparsers.add_parser(
         "app", help="Launch the DeskResumer Studio visual desktop application"
     )
@@ -124,7 +123,13 @@ def main():
         "--no-browser", action="store_true", help="Do not open browser automatically"
     )
 
+    # Command: native (Native Desktop Window / System Tray)
+    native_p = subparsers.add_parser(
+        "native", help="Launch the true Native Desktop GUI (PySide6 / System Tray)"
+    )
+
     args = parser.parse_args()
+
 
 
 
@@ -224,6 +229,11 @@ def main():
     elif args.command == "app":
         from .ui import start_ui_server
         start_ui_server(port=args.port, open_browser=not args.no_browser)
+
+    elif args.command == "native":
+        from .native_ui import run_native_app
+        run_native_app(args.config)
+
 
 
 
