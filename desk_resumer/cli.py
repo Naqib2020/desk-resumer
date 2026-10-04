@@ -125,7 +125,12 @@ def main():
     add_task_p = subparsers.add_parser("add-task", help="Append a new task to TASKS.md")
     add_task_p.add_argument("text", help="Task description text")
 
+    # Command: save-config-json
+    save_cfg_p = subparsers.add_parser("save-config-json", help="Save config from JSON")
+    save_cfg_p.add_argument("data", help="JSON configuration string")
+
     args = parser.parse_args()
+
 
 
 
@@ -255,14 +260,27 @@ def main():
                         tasks.append({"id": idx, "text": m.group(2).strip(), "completed": done})
 
         completed = sum(1 for t in tasks if t["completed"])
+        cfg = load_config(args.config)
         print(json.dumps({
             "targets": target_data,
             "queue": {
                 "completed": completed,
                 "total": len(tasks),
                 "tasks": tasks
-            }
+            },
+            "config": cfg
         }))
+
+    elif args.command == "save-config-json":
+        import json
+        import yaml
+        try:
+            new_cfg = json.loads(args.data)
+            with open("config.yaml", "w", encoding="utf-8") as f:
+                yaml.dump(new_cfg, f, default_flow_style=False, sort_keys=False)
+            print("Config saved successfully.")
+        except Exception as e:
+            print(f"Failed to save config: {e}")
 
     elif args.command == "toggle-task":
         import re
@@ -287,6 +305,7 @@ def main():
             with open("TASKS.md", "a", encoding="utf-8") as f:
                 f.write(f"\n- [ ] {text}")
             print(f"Added task: {text}")
+
 
 
 
