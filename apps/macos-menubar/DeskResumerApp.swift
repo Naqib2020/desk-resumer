@@ -366,6 +366,7 @@ struct PopoverContentView: View {
                             Capsule()
                                 .strokeBorder(model.isWatchdogRunning ? Color.green.opacity(0.4) : Color.white.opacity(0.3), lineWidth: 0.75)
                         )
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
                 }
@@ -384,7 +385,7 @@ struct PopoverContentView: View {
                             Text(tab.rawValue)
                                 .font(.system(size: 11, weight: model.selectedTab == tab ? .semibold : .medium, design: .rounded))
                                 .foregroundColor(model.selectedTab == tab ? .primary : .secondary)
-                                .padding(.vertical, 5)
+                                .padding(.vertical, 6)
                                 .frame(maxWidth: .infinity)
                                 .background(
                                     ZStack {
@@ -396,9 +397,12 @@ struct PopoverContentView: View {
                                                         .strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5)
                                                 )
                                                 .shadow(color: Color.black.opacity(0.06), radius: 4, y: 1.5)
+                                        } else {
+                                            Color.black.opacity(0.001)
                                         }
                                     }
                                 )
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -438,6 +442,9 @@ struct PopoverContentView: View {
                             Text("Test Push Alert")
                                 .font(.system(size: 11, weight: .medium, design: .rounded))
                         }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 6)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.secondary)
@@ -448,6 +455,9 @@ struct PopoverContentView: View {
                         Text("Quit")
                             .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundColor(.secondary)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 6)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -484,6 +494,7 @@ struct LiquidDashboardView: View {
                         .padding(.vertical, 3)
                         .background(Capsule().fill(Color.white.opacity(0.4)))
                         .overlay(Capsule().strokeBorder(Color.white.opacity(0.6), lineWidth: 0.5))
+                        .contentShape(Capsule())
                         .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 12)
@@ -546,12 +557,12 @@ struct LiquidDashboardView: View {
                     // Task Checklist Items
                     VStack(spacing: 6) {
                         ForEach(model.tasks) { task in
-                            HStack(spacing: 8) {
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                                        model.toggleTask(task)
-                                    }
-                                }) {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                                    model.toggleTask(task)
+                                }
+                            }) {
+                                HStack(spacing: 8) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 4, style: .continuous)
                                             .fill(task.completed ? Color.green : Color.black.opacity(0.08))
@@ -567,18 +578,19 @@ struct LiquidDashboardView: View {
                                                 .foregroundColor(.white)
                                         }
                                     }
+
+                                    Text(task.text)
+                                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                                        .strikethrough(task.completed)
+                                        .foregroundColor(task.completed ? .secondary : .primary)
+                                        .lineLimit(2)
+
+                                    Spacer()
                                 }
-                                .buttonStyle(.plain)
-
-                                Text(task.text)
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                                    .strikethrough(task.completed)
-                                    .foregroundColor(task.completed ? .secondary : .primary)
-                                    .lineLimit(2)
-
-                                Spacer()
+                                .padding(.vertical, 3)
+                                .contentShape(Rectangle())
                             }
-                            .padding(.vertical, 2)
+                            .buttonStyle(.plain)
                         }
                     }
 
@@ -606,6 +618,7 @@ struct LiquidDashboardView: View {
                                 .frame(width: 26, height: 26)
                                 .background(Circle().fill(Color.blue))
                                 .shadow(color: Color.blue.opacity(0.35), radius: 4)
+                                .contentShape(Circle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -688,6 +701,7 @@ struct LiquidChannelCard: View {
                             .strokeBorder(Color.white.opacity(0.6), lineWidth: 0.75)
                     )
                     .shadow(color: Color.black.opacity(0.04), radius: 3, y: 1)
+                    .contentShape(Capsule())
             }
             .buttonStyle(.plain)
         }
@@ -823,6 +837,7 @@ struct LiquidSettingsView: View {
                                 )
                                 .shadow(color: Color.blue.opacity(0.3), radius: 6, y: 2)
                         )
+                        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
                     .buttonStyle(.plain)
 
