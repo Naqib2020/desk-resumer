@@ -41,7 +41,6 @@ struct PowerConfig: Codable {
     var keep_display_on: Bool?
 }
 
-
 struct NotificationsConfig: Codable {
     var enabled: Bool?
     var ntfy: NtfyConfig?
@@ -70,7 +69,7 @@ struct SupervisorState: Codable {
 
 enum ActiveTab: String, CaseIterable {
     case dashboard = "Dashboard"
-    case settings = "Integrations & Settings"
+    case settings = "Settings"
 }
 
 // MARK: - View Model
@@ -97,7 +96,6 @@ class SupervisorViewModel: ObservableObject {
     private var timer: Timer?
 
     init() {
-        // Read persisted project directory if saved, else default to current Documents/desk-resumer
         if let savedDir = UserDefaults.standard.string(forKey: "DeskResumerProjectDir"), FileManager.default.fileExists(atPath: savedDir) {
             self.projectDir = savedDir
         } else {
@@ -111,7 +109,6 @@ class SupervisorViewModel: ObservableObject {
 
         refreshState()
 
-        // Background polling loop
         self.timer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { [weak self] _ in
             self?.refreshState()
         }
@@ -163,7 +160,6 @@ class SupervisorViewModel: ObservableObject {
                     self.completedCount = state.queue.completed
                     self.totalCount = state.queue.total
 
-                    // Populate settings from config if not dirty
                     if let cfg = state.config {
                         if self.ntfyTopic.isEmpty { self.ntfyTopic = cfg.notifications?.ntfy?.topic ?? "" }
                         if self.telegramToken.isEmpty { self.telegramToken = cfg.notifications?.telegram?.bot_token ?? "" }
@@ -215,7 +211,7 @@ class SupervisorViewModel: ObservableObject {
 
     func testPhoneAlert() {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            _ = self?.runCli(["test-notify", "--message", "⚡ Test alert from macOS Native Menu Bar!"])
+            _ = self?.runCli(["test-notify", "--message", "⚡ Alert from DeskResumer Liquid Glass UI!"])
         }
     }
 
@@ -226,7 +222,7 @@ class SupervisorViewModel: ObservableObject {
             poll_interval_seconds: 30,
             safety_buffer_seconds: safetyBuffer
         )
-        cfg.power = PowerConfig()
+        cfg.power = PowerConfig(prevent_sleep: true, keep_display_on: false)
         cfg.notifications = NotificationsConfig(
             enabled: true,
             ntfy: NtfyConfig(topic: ntfyTopic),
@@ -240,7 +236,7 @@ class SupervisorViewModel: ObservableObject {
                 DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                     _ = self?.runCli(["save-config-json", jsonString])
                     DispatchQueue.main.async {
-                        self?.saveStatusMessage = "Settings saved successfully!"
+                        self?.saveStatusMessage = "Saved to config.yaml"
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             self?.saveStatusMessage = nil
                         }
@@ -248,158 +244,334 @@ class SupervisorViewModel: ObservableObject {
                 }
             }
         } catch {
-            saveStatusMessage = "Failed to encode settings."
+            saveStatusMessage = "Encoding error."
         }
     }
 }
 
-// MARK: - Main Popover View
+// MARK: - Liquid Glass View Modifiers & Styles
+struct LiquidGlassCardModifier: ViewModifier {
+    var cornerRadius: CGFloat = 12
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                    
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(Color(nsColor: .controlBackgroundColor).opacity(0.35))
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color.white.opacity(0.55), location: 0.0),
+                                .init(color: Color.white.opacity(0.12), location: 0.4),
+                                .init(color: Color.white.opacity(0.04), location: 1.0)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.75
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+    }
+}
+
+extension View {
+    func liquidGlassCard(cornerRadius: CGFloat = 12) -> some View {
+        self.modifier(LiquidGlassCardModifier(cornerRadius: cornerRadius))
+    }
+}
+
+// MARK: - Popover Content View
 struct PopoverContentView: View {
     @ObservedObject var model: SupervisorViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header Bar
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(model.isWatchdogRunning ? .green : .secondary)
+        ZStack {
+            // Ambient Liquid Glass Gradient Backdrop
+            LinearGradient(
+                colors: [
+                    Color(nsColor: .windowBackgroundColor).opacity(0.85),
+                    Color(nsColor: .controlBackgroundColor).opacity(0.7)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .background(.ultraThinMaterial)
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Header Glass Bar
+                HStack(spacing: 10) {
+                    // Logo Badge
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: model.isWatchdogRunning ? [Color.green, Color.mint] : [Color.blue, Color.cyan],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 28, height: 28)
+                            .shadow(color: (model.isWatchdogRunning ? Color.green : Color.blue).opacity(0.35), radius: 6, y: 2)
+
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                    }
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text("DeskResumer")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        
                         Text("AUTONOMOUS SUPERVISOR")
-                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .font(.system(size: 8, weight: .semibold, design: .monospaced))
                             .foregroundColor(.secondary)
+                            .tracking(0.6)
+                    }
+
+                    Spacer()
+
+                    // Start/Stop Glass Pill Button
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            model.toggleWatchdog()
+                        }
+                    }) {
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(model.isWatchdogRunning ? Color.green : Color.secondary)
+                                .frame(width: 6, height: 6)
+                                .shadow(color: model.isWatchdogRunning ? Color.green.opacity(0.8) : Color.clear, radius: 4)
+
+                            Text(model.isWatchdogRunning ? "Active" : "Idle")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(model.isWatchdogRunning ? Color.green.opacity(0.15) : Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                        )
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(model.isWatchdogRunning ? Color.green.opacity(0.4) : Color.white.opacity(0.3), lineWidth: 0.75)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+                // Liquid Segmented Pill Switcher
+                HStack(spacing: 3) {
+                    ForEach(ActiveTab.allCases, id: \.self) { tab in
+                        Button(action: {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.78)) {
+                                model.selectedTab = tab
+                            }
+                        }) {
+                            Text(tab.rawValue)
+                                .font(.system(size: 11, weight: model.selectedTab == tab ? .semibold : .medium, design: .rounded))
+                                .foregroundColor(model.selectedTab == tab ? .primary : .secondary)
+                                .padding(.vertical, 5)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    ZStack {
+                                        if model.selectedTab == tab {
+                                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.9))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                                        .strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5)
+                                                )
+                                                .shadow(color: Color.black.opacity(0.06), radius: 4, y: 1.5)
+                                        }
+                                    }
+                                )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
+                .padding(3)
+                .background(
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Color.black.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+                        )
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
 
-                Spacer()
+                Divider()
+                    .opacity(0.5)
 
-                Button(action: { model.toggleWatchdog() }) {
-                    Text(model.isWatchdogRunning ? "Stop" : "Start")
-                        .font(.system(size: 11, weight: .semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(model.isWatchdogRunning ? Color.red.opacity(0.15) : Color.primary.opacity(0.1))
-                        .foregroundColor(model.isWatchdogRunning ? .red : .primary)
-                        .cornerRadius(6)
+                // Tab Content
+                if model.selectedTab == .dashboard {
+                    LiquidDashboardView(model: model)
+                } else {
+                    LiquidSettingsView(model: model)
                 }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(NSColor.windowBackgroundColor))
 
-            // Navigation Segmented Control
-            Picker("", selection: $model.selectedTab) {
-                Text("Dashboard").tag(ActiveTab.dashboard)
-                Text("Integrations & Settings").tag(ActiveTab.settings)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color(NSColor.windowBackgroundColor))
+                Divider()
+                    .opacity(0.5)
 
-            Divider()
+                // Footer Bar
+                HStack {
+                    Button(action: { model.testPhoneAlert() }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "bell.badge.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.blue)
+                            Text("Test Push Alert")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
 
-            // Viewport Switcher
-            if model.selectedTab == .dashboard {
-                DashboardView(model: model)
-            } else {
-                SettingsView(model: model)
-            }
+                    Spacer()
 
-            Divider()
-
-            // Footer Bar
-            HStack {
-                Button(action: { model.testPhoneAlert() }) {
-                    Label("Test Push Alert", systemImage: "bell.badge")
-                        .font(.system(size: 11))
+                    Button(action: { NSApplication.shared.terminate(nil) }) {
+                        Text("Quit")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-
-                Spacer()
-
-                Button(action: { NSApplication.shared.terminate(nil) }) {
-                    Text("Quit")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 380, height: 530)
+        .frame(width: 370, height: 520)
     }
 }
 
-// MARK: - Tab 1: Dashboard View
-struct DashboardView: View {
+// MARK: - Liquid Dashboard View
+struct LiquidDashboardView: View {
     @ObservedObject var model: SupervisorViewModel
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(spacing: 12) {
-                // Workspace Path Card
-                HStack(spacing: 6) {
+                
+                // Workspace Glass Capsule
+                HStack(spacing: 8) {
                     Image(systemName: "folder.fill")
                         .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.blue)
+                    
                     Text(URL(fileURLWithPath: model.projectDir).lastPathComponent)
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    
                     Spacer()
+                    
                     Button("Change...") { model.selectProjectFolder() }
-                        .font(.system(size: 10))
-                        .buttonStyle(.bordered)
-                        .controlSize(.mini)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(Color.white.opacity(0.4)))
+                        .overlay(Capsule().strokeBorder(Color.white.opacity(0.6), lineWidth: 0.5))
+                        .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Color(NSColor.controlBackgroundColor)))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .liquidGlassCard(cornerRadius: 10)
 
-                // Channel Cards
-                VStack(spacing: 6) {
+                // Channels Section (ChatGPT & Antigravity)
+                VStack(spacing: 8) {
                     ForEach(model.targets) { target in
-                        ChannelRowView(target: target, onTrigger: {
+                        LiquidChannelCard(target: target, onTrigger: {
                             model.triggerPrompt(target: target.name)
                         })
                     }
                 }
 
-                // Execution Pipeline
-                VStack(alignment: .leading, spacing: 8) {
+                // Execution Pipeline Glass Box
+                VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text("EXECUTION PIPELINE")
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.secondary)
+                        HStack(spacing: 6) {
+                            Image(systemName: "checklist")
+                                .font(.system(size: 11))
+                                .foregroundColor(.indigo)
+                            Text("EXECUTION PIPELINE")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .tracking(0.5)
+                        }
+                        
                         Spacer()
-                        Text("\(model.completedCount) / \(model.totalCount) (\(model.totalCount > 0 ? Int(Double(model.completedCount)/Double(model.totalCount)*100) : 0)%)")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundColor(.secondary)
+                        
+                        Text("\(model.completedCount)/\(model.totalCount) (\(model.totalCount > 0 ? Int(Double(model.completedCount)/Double(model.totalCount)*100) : 0)%)")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.blue.opacity(0.12)))
+                            .foregroundColor(.blue)
                     }
 
-                    ProgressView(value: Double(model.completedCount), total: Double(max(1, model.totalCount)))
-                        .progressViewStyle(.linear)
-                        .tint(.white)
+                    // Liquid Progress Track
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.black.opacity(0.08))
+                                .frame(height: 5)
 
-                    VStack(spacing: 4) {
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.blue, Color.cyan],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(Double(model.completedCount) / Double(max(1, model.totalCount))))), height: 5)
+                                .shadow(color: Color.blue.opacity(0.3), radius: 3)
+                        }
+                    }
+                    .frame(height: 5)
+
+                    // Task Checklist Items
+                    VStack(spacing: 6) {
                         ForEach(model.tasks) { task in
                             HStack(spacing: 8) {
-                                Button(action: { model.toggleTask(task) }) {
-                                    Image(systemName: task.completed ? "checkmark.square.fill" : "square")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(task.completed ? .secondary : .primary)
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                                        model.toggleTask(task)
+                                    }
+                                }) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                            .fill(task.completed ? Color.green : Color.black.opacity(0.08))
+                                            .frame(width: 16, height: 16)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                                    .strokeBorder(task.completed ? Color.green : Color.white.opacity(0.4), lineWidth: 0.75)
+                                            )
+
+                                        if task.completed {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 9, weight: .bold))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
                                 }
                                 .buttonStyle(.plain)
 
                                 Text(task.text)
-                                    .font(.system(size: 11))
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
                                     .strikethrough(task.completed)
                                     .foregroundColor(task.completed ? .secondary : .primary)
                                     .lineLimit(2)
@@ -410,61 +582,164 @@ struct DashboardView: View {
                         }
                     }
 
-                    // Add Task Field
-                    HStack {
-                        TextField("Append subtask...", text: $model.newTaskText)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 11))
+                    // Add Subtask Input
+                    HStack(spacing: 6) {
+                        TextField("Append subtask to queue...", text: $model.newTaskText)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 11, design: .rounded))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.4), lineWidth: 0.75)
+                            )
                             .onSubmit { model.addTask() }
 
                         Button(action: { model.addTask() }) {
                             Image(systemName: "plus")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 26, height: 26)
+                                .background(Circle().fill(Color.blue))
+                                .shadow(color: Color.blue.opacity(0.35), radius: 4)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .buttonStyle(.plain)
                     }
                     .padding(.top, 4)
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(NSColor.controlBackgroundColor)))
+                .liquidGlassCard(cornerRadius: 12)
             }
             .padding(14)
         }
     }
 }
 
-// MARK: - Tab 2: Settings & Integrations View
-struct SettingsView: View {
+// MARK: - Liquid Channel Card
+struct LiquidChannelCard: View {
+    let target: TargetChannel
+    let onTrigger: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Channel Icon with Ambient Shadow
+            ZStack {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: target.name.lowercased().contains("chatgpt") ? [Color.green.opacity(0.2), Color.mint.opacity(0.1)] : [Color.indigo.opacity(0.2), Color.purple.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 34, height: 34)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.4), lineWidth: 0.5)
+                    )
+
+                Image(systemName: target.name.lowercased().contains("chatgpt") ? "sparkles" : "terminal.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(target.name.lowercased().contains("chatgpt") ? .green : .indigo)
+            }
+
+            // Info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(target.name)
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+
+                if !target.running {
+                    Text("Offline")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                } else if target.is_limited {
+                    Text("Cooldown: \(target.wait_seconds / 60)m left")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundColor(.orange)
+                } else if target.busy {
+                    Text("Actively Generating")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundColor(.green)
+                } else {
+                    Text("Ready (Idle)")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            // Trigger Button with Specular Gloss
+            Button(action: onTrigger) {
+                Text("Trigger")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule()
+                            .fill(Color(nsColor: .controlBackgroundColor).opacity(0.75))
+                    )
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(Color.white.opacity(0.6), lineWidth: 0.75)
+                    )
+                    .shadow(color: Color.black.opacity(0.04), radius: 3, y: 1)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(10)
+        .liquidGlassCard(cornerRadius: 12)
+    }
+}
+
+// MARK: - Liquid Settings View
+struct LiquidSettingsView: View {
     @ObservedObject var model: SupervisorViewModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                // Telegram Section
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 12) {
+                // Telegram Glass Group
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Label("Telegram Two-Way Bot", systemImage: "paperplane.fill")
-                            .font(.system(size: 11, weight: .semibold))
+                        HStack(spacing: 6) {
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(.blue)
+                            Text("TELEGRAM REMOTE BOT")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .tracking(0.5)
+                        }
+                        
                         Spacer()
-                        Text(!model.telegramToken.isEmpty ? "Connected" : "Not Set")
-                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(!model.telegramToken.isEmpty ? Color.green.opacity(0.15) : Color.secondary.opacity(0.15))
-                            .foregroundColor(!model.telegramToken.isEmpty ? .green : .secondary)
-                            .cornerRadius(4)
+                        
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(!model.telegramToken.isEmpty ? Color.green : Color.secondary)
+                                .frame(width: 5, height: 5)
+                            Text(!model.telegramToken.isEmpty ? "Connected" : "Not Configured")
+                                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                                .foregroundColor(!model.telegramToken.isEmpty ? .green : .secondary)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(!model.telegramToken.isEmpty ? Color.green.opacity(0.12) : Color.secondary.opacity(0.12)))
                     }
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("BOT TOKEN").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("BOT TOKEN").font(.system(size: 8, weight: .semibold, design: .monospaced)).foregroundColor(.secondary)
                         SecureField("123456:ABC-DEF...", text: $model.telegramToken)
                             .textFieldStyle(.roundedBorder)
                             .font(.system(size: 11))
                     }
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("ALLOWED CHAT ID").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("ALLOWED CHAT ID").font(.system(size: 8, weight: .semibold, design: .monospaced)).foregroundColor(.secondary)
                         TextField("e.g. 987654321", text: $model.telegramChatId)
                             .textFieldStyle(.roundedBorder)
                             .font(.system(size: 11))
@@ -475,31 +750,42 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(NSColor.controlBackgroundColor)))
+                .liquidGlassCard(cornerRadius: 12)
 
-                // Mobile Alerts (ntfy)
+                // Mobile Alerts Glass Group
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("ntfy.sh Mobile Push Alerts", systemImage: "bell.fill")
-                        .font(.system(size: 11, weight: .semibold))
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("TOPIC NAME").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundColor(.secondary)
-                        TextField("desk-resumer-naqib", text: $model.ntfyTopic)
-                            .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 6) {
+                        Image(systemName: "bell.fill")
                             .font(.system(size: 11))
+                            .foregroundColor(.orange)
+                        Text("NTFY.SH MOBILE PUSH TOPIC")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .tracking(0.5)
                     }
+
+                    TextField("desk-resumer-naqib", text: $model.ntfyTopic)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 11))
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(NSColor.controlBackgroundColor)))
+                .liquidGlassCard(cornerRadius: 12)
 
-                // Cooldown Rules
+                // Cooldown Rules Glass Group
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Automation & Quota Rules", systemImage: "slider.horizontal.3")
-                        .font(.system(size: 11, weight: .semibold))
+                    HStack(spacing: 6) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 11))
+                            .foregroundColor(.cyan)
+                        Text("AUTOMATION RULES")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .tracking(0.5)
+                    }
 
                     HStack {
                         Text("Safety Buffer: \(model.safetyBuffer)s")
-                            .font(.system(size: 11))
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
                         Spacer()
                         Stepper("", value: $model.safetyBuffer, in: 30...600, step: 30)
                             .controlSize(.mini)
@@ -510,86 +796,50 @@ struct SettingsView: View {
                         Text("ChatGPT Only").tag("chatgpt")
                         Text("Antigravity Only").tag("antigravity")
                     }
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, design: .rounded))
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(NSColor.controlBackgroundColor)))
+                .liquidGlassCard(cornerRadius: 12)
 
-                // Save Button & Confirmation
+                // Save Glass Button
                 VStack(spacing: 6) {
                     Button(action: { model.saveSettings() }) {
                         HStack {
                             Spacer()
                             Text("Save Configuration")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
                             Spacer()
                         }
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.blue, Color.cyan],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .shadow(color: Color.blue.opacity(0.3), radius: 6, y: 2)
+                        )
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.white)
-                    .foregroundColor(.black)
+                    .buttonStyle(.plain)
 
                     if let msg = model.saveStatusMessage {
                         Text(msg)
-                            .font(.system(size: 11))
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
                             .foregroundColor(.green)
                     }
                 }
+                .padding(.top, 4)
             }
             .padding(14)
         }
     }
 }
 
-// MARK: - Channel Row Component
-struct ChannelRowView: View {
-    let target: TargetChannel
-    let onTrigger: () -> Void
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            Image(systemName: target.name.lowercased().contains("chatgpt") ? "sparkles" : "terminal.fill")
-                .font(.system(size: 13))
-                .foregroundColor(.secondary)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(target.name)
-                    .font(.system(size: 12, weight: .medium))
-
-                if !target.running {
-                    Text("Offline")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                } else if target.is_limited {
-                    Text("Cooldown: \(target.wait_seconds / 60)m left")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.orange)
-                } else if target.busy {
-                    Text("Actively Generating")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.green)
-                } else {
-                    Text("Ready (Idle)")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            Spacer()
-
-            Button(action: onTrigger) {
-                Text("Trigger")
-                    .font(.system(size: 10, weight: .medium))
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.mini)
-        }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color(NSColor.controlBackgroundColor)))
-    }
-}
-
-// MARK: - Entry Point
+// MARK: - Main Application
 @main
 struct DeskResumerApp: App {
     @StateObject private var model = SupervisorViewModel()
