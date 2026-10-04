@@ -112,7 +112,21 @@ def main():
         help="Action to perform on the service",
     )
 
+    # Command: status-json (Machine-readable state for native frontends)
+    subparsers.add_parser(
+        "status-json", help="Output current state as JSON for native app frontends"
+    )
+
+    # Command: toggle-task
+    toggle_p = subparsers.add_parser("toggle-task", help="Toggle a task by line index in TASKS.md")
+    toggle_p.add_argument("task_id", type=int, help="Task line index")
+
+    # Command: add-task
+    add_task_p = subparsers.add_parser("add-task", help="Append a new task to TASKS.md")
+    add_task_p.add_argument("text", help="Task description text")
+
     args = parser.parse_args()
+
 
 
 
@@ -210,6 +224,70 @@ def main():
             ServiceManager.status()
         elif action == "uninstall":
             ServiceManager.uninstall()
+
+    elif args.command == "status-json":
+        import json
+        import re
+        adapter = get_platform_adapter()
+        targets = get_configured_targets("all", adapter)
+        target_data = []
+        for t in targets:
+            running = t.is_running()
+            busy = t.is_busy() if running else False
+            limited, wait_sec, desc = t.check_status() if running else (False, 0, None)
+            target_data.append({
+                "name": t.name,
+                "running": running,
+                "busy": busy,
+                "is_limited": limited,
+                "wait_seconds": wait_sec,
+                "desc": desc,
+            })
+
+        tasks = []
+        p = Path("TASKS.md")
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                for idx, line in enumerate(f):
+                    m = re.match(r"^\s*-\s*\[([ xX])\]\s+(.+)$", line)
+                    if m:
+                        done = m.group(1).lower() == "x"
+                        tasks.append({"id": idx, "text": m.group(2).strip(), "completed": done})
+
+        completed = sum(1 for t in tasks if t["completed"])
+        print(json.dumps({
+            "targets": target_data,
+            "queue": {
+                "completed": completed,
+                "total": len(tasks),
+                "tasks": tasks
+            }
+        }))
+
+    elif args.command == "toggle-task":
+        import re
+        p = Path("TASKS.md")
+        if p.exists():
+            lines = []
+            with open(p, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            if 0 <= args.task_id < len(lines):
+                line = lines[args.task_id]
+                if "[x]" in line.lower():
+                    lines[args.task_id] = re.sub(r"\[[xX]\]", "[ ]", line, count=1)
+                else:
+                    lines[args.task_id] = re.sub(r"\[\s*\]", "[x]", line, count=1)
+                with open(p, "w", encoding="utf-8") as f:
+                    f.writelines(lines)
+                print(f"Toggled task #{args.task_id}")
+
+    elif args.command == "add-task":
+        text = args.text.strip()
+        if text:
+            with open("TASKS.md", "a", encoding="utf-8") as f:
+                f.write(f"\n- [ ] {text}")
+            print(f"Added task: {text}")
+
 
 
 
