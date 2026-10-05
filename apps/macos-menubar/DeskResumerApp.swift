@@ -81,7 +81,7 @@ class SupervisorViewModel: ObservableObject {
     @Published var totalCount: Int = 0
     @Published var isWatchdogRunning: Bool = false
     @Published var newTaskText: String = ""
-    @Published var projectDir: String = "/Users/naqib/Documents/desk-resumer"
+    @Published var projectDir: String = FileManager.default.currentDirectoryPath
 
     // Settings fields
     @Published var telegramToken: String = ""
@@ -99,9 +99,14 @@ class SupervisorViewModel: ObservableObject {
         if let savedDir = UserDefaults.standard.string(forKey: "DeskResumerProjectDir"), FileManager.default.fileExists(atPath: savedDir) {
             self.projectDir = savedDir
         } else {
-            let defaultPath = "/Users/naqib/Documents/desk-resumer"
-            if FileManager.default.fileExists(atPath: defaultPath) {
-                self.projectDir = defaultPath
+            // Dynamically locate repository root if bundled inside apps/macos-menubar
+            let bundleUrl = Bundle.main.bundleURL
+            let candidateDir = bundleUrl.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path
+            let pyprojectCandidate = (candidateDir as NSString).appendingPathComponent("pyproject.toml")
+            if FileManager.default.fileExists(atPath: pyprojectCandidate) {
+                self.projectDir = candidateDir
+            } else if FileManager.default.fileExists(atPath: (FileManager.default.currentDirectoryPath as NSString).appendingPathComponent("pyproject.toml")) {
+                self.projectDir = FileManager.default.currentDirectoryPath
             } else {
                 self.projectDir = FileManager.default.currentDirectoryPath
             }
@@ -829,7 +834,7 @@ struct LiquidSettingsView: View {
                             .tracking(0.5)
                     }
 
-                    TextField("desk-resumer-naqib", text: $model.ntfyTopic)
+                    TextField("e.g. my-desk-alerts", text: $model.ntfyTopic)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 11))
                 }

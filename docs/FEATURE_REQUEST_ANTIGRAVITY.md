@@ -23,7 +23,7 @@ We propose building native quota-aware autonomous resumption and sleep managemen
 - Automatically trigger a continuation prompt (e.g., `"Continue working on the current task"`) the moment the reset window expires, without requiring user presence.
 
 ### C. Native Sequential Task Checklist Integration
-- Support auto-advancing through project plans or markdown task queues (e.g., `TASKS.md` or `.gemini/antigravity/` plans).
+- Support auto-advancing through project plans or markdown task queues (e.g., `TASKS.md` or workspace plan checklists).
 - Once a task or milestone passes verification, the agent automatically marks it complete and dispatches the next pending item.
 
 ### D. Mobile Alerts & Remote Status (Webhooks / Push)

@@ -1,136 +1,134 @@
-# DeskResumer ⏳⚡
+# DeskResumer
 
-> **Autonomous Task Resumer & Cooldown Supervisor for AI Desktop IDEs**  
-> Designed for **Google Antigravity** & **ChatGPT / Codex Desktop**.
+> Autonomous task resumer and rate-limit cooldown supervisor for AI desktop environments (ChatGPT / Codex & Google Antigravity).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-blue.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)]()
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)]()
 [![Swift](https://img.shields.io/badge/Swift-Native%20macOS-orange.svg)]()
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)]()
 
-When working with autonomous coding assistants like **Google Antigravity** or **ChatGPT Desktop (Codex)**, hitting the 5-hour usage/quota limit brings development to a complete standstill. If you step away from your desk or run overnight sessions, hours of potential productivity are wasted waiting for the limit to clear because the app requires manual interaction to resume.
+When executing long-running autonomous workflows in desktop coding agents like ChatGPT (Codex) or Google Antigravity, hitting 5-hour quota limits halts execution. If you step away from your machine or run tasks overnight, hours of development time are lost waiting for the rate limit to clear before manually prompting the agent to resume.
 
-**DeskResumer** operates as an autonomous supervisor:
-1. 🔍 **Rate-Limit Detection**: Continuously monitors assistant windows for usage limit banners and cooldown countdowns.
-2. ⏱️ **Timestamp Parsing**: Accurately extracts relative (`2h 15m`) and absolute (`until 3:45 PM`) reset times.
-3. ☕ **Dynamic Sleep Prevention**: Asserts OS wake locks via `caffeinate` on macOS and `SetThreadExecutionState` on Windows so your machine never sleeps during active work or countdowns.
-4. 📋 **Autonomous Pipeline (`TASKS.md`)**: Auto-steps through sequential project milestones, injecting the next pending task into the AI prompt once quota replenishes.
-5. 📲 **Mobile Alerts & Remote Bot**: Delivers push notifications via `ntfy.sh` (zero setup), Discord, or two-way interactive Telegram bot (`/status`, `/skip`, `/pause`, `/resume`).
-
----
-
-## 🖥️ Native User Interfaces
-
-DeskResumer is designed with a **True Native First** philosophy. No heavy Electron wrappers or resource-draining web views.
-
-### 🍏 Apple Native Menu Bar App (macOS)
-Built purely in **SwiftUI** using Apple's modern **Liquid Glass** aesthetic (`.ultraThinMaterial`, specular borders, responsive spring physics).
-* **Two Tabs**: Live **Dashboard** (pipeline tracker, channel status, workspace changer) and **Settings** (Telegram/ntfy credentials, safety buffers).
-* **Zero External Dependencies**: Compiles in 1.5 seconds using the pre-installed `/usr/bin/swiftc` compiler.
-* **Instant Launch**:
-  ```bash
-  ./run-macos-menubar.sh
-  ```
-
-### 🪟 Windows Native System Tray App (Windows)
-Built in **C# / .NET** providing a lightweight system tray icon, live context menus, and background worker bridge.
-* Double-click `run-windows.bat` or see the [Windows Guide](docs/WINDOWS_GUIDE.md).
+DeskResumer runs as a lightweight supervisor:
+- **Rate-Limit Detection**: Monitors desktop windows for usage limit banners and cooldown messages.
+- **Timestamp Parsing**: Extracts relative (`2h 15m`) and absolute (`until 3:45 PM`) reset times.
+- **Power Management**: Prevents OS sleep during cooldowns via `caffeinate` (macOS) and `SetThreadExecutionState` (Windows).
+- **Sequential Pipeline (`TASKS.md`)**: Automatically dispatches the next checklist task into the active session upon cooldown expiration.
+- **Remote Notifications**: Sends alerts and accepts two-way remote control via `ntfy.sh`, Discord, and Telegram (`/status`, `/skip`, `/pause`, `/resume`).
 
 ---
 
-## 🚀 Quickstart
+## Native User Interfaces
 
-### 1. Installation
+DeskResumer uses native desktop frontends rather than web views or Electron wrappers.
+
+### macOS Menu Bar (SwiftUI)
+Built with native SwiftUI and compiled directly with Apple's `swiftc` compiler:
+- Compact menu bar popover with Liquid Glass styling (`.ultraThinMaterial`).
+- Live target status, interactive task checklist, workspace directory selector, and settings panel.
+- Zero extra dependencies or Xcode project setup required.
 
 ```bash
-# Clone the repository
+./run-macos-menubar.sh
+```
+
+### Windows System Tray (.NET / C#)
+Built in C# for Windows 10/11:
+- System tray status icon, context menu actions, and Win32 power management integration.
+- Launch via `run-windows.bat` (see [Windows Setup Guide](docs/WINDOWS_GUIDE.md)).
+
+---
+
+## Quickstart
+
+### Prerequisites
+- Python 3.10+
+- macOS (Sonoma / Sequoia) or Windows 10/11
+
+### Installation
+
+```bash
 git clone https://github.com/your-username/desk-resumer.git
 cd desk-resumer
 
-# Create a virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
 pip install -e .
 ```
 
-### 2. Configuration (Optional)
+### Running
 
+**macOS Menu Bar App:**
 ```bash
-cp config.example.yaml config.yaml
+./run-macos-menubar.sh
 ```
-*(You can also configure Telegram, Discord, and ntfy directly inside the native Menu Bar UI Settings tab).*
 
-### 3. Running DeskResumer
+**CLI Watchdog:**
+```bash
+desk-resumer watch --queue TASKS.md
+```
 
-* **macOS Menu Bar App**:
-  ```bash
-  ./run-macos-menubar.sh
-  ```
-* **CLI Watchdog**:
-  ```bash
-  desk-resumer watch --queue TASKS.md
-  ```
-* **Persistent OS Background Service** (survives terminal close and system reboots):
-  ```bash
-  desk-resumer service install
-  desk-resumer service start
-  desk-resumer service status
-  ```
+**Persistent Background Service (launchd / Task Scheduler):**
+```bash
+desk-resumer service install
+desk-resumer service start
+desk-resumer service status
+```
 
 ---
 
-## 📋 The Execution Pipeline (`TASKS.md`)
+## Task Pipeline (`TASKS.md`)
 
-DeskResumer includes a native **Autonomous Execution Pipeline**:
-* **Completely Optional**: If no `TASKS.md` is present, DeskResumer simply falls back to resuming with *"Continue your work."*
-* **Auto-Created**: Adding a subtask inside the Menu Bar UI automatically generates a `TASKS.md` in your project folder.
-* **Standard Markdown**: Compatible with standard markdown checklists:
-  ```markdown
-  - [x] Initial setup and architecture review
-  - [ ] Implement mobile and desktop preview product mockups
-  - [ ] Run end-to-end responsiveness validation
-  ```
-* **Autonomous Stepping**: As each task milestone finishes, DeskResumer marks it complete (`- [x]`) and dispatches the next item.
+DeskResumer can optionally drive multi-step workflows from a standard Markdown checklist:
 
----
+```markdown
+- [x] Initial setup and architecture review
+- [ ] Implement mobile and desktop preview product mockups
+- [ ] Run end-to-end responsiveness validation
+```
 
-## 📱 Mobile Alerts & Two-Way Telegram Control
-
-* **Zero-Setup Push Notifications (`ntfy.sh`)**:
-  * Set a topic name in Settings (e.g. `desk-resumer-yourname`).
-  * Install the free `ntfy` app on iOS or Android and subscribe to your topic.
-* **Two-Way Telegram Bot**:
-  * Text `/status` – View remaining cooldown, active AI target, and pipeline progress.
-  * Text `/skip` – Skip the currently stalled task and advance to the next.
-  * Text `/pause` & `/resume` – Pause or resume watchdog automation remotely.
+- **Automatic progression**: When an in-flight task finishes and the agent goes idle, DeskResumer marks it complete (`- [x]`) and dispatches the next item.
+- **Self-initializing**: Adding a subtask inside the Menu Bar UI automatically generates `TASKS.md` if one does not exist.
+- **Fallback prompt**: If `TASKS.md` is omitted, DeskResumer defaults to injecting `"Continue working on the task from where you left off."` upon wake-up.
 
 ---
 
-## 🧪 Unit Testing
+## Mobile Notifications & Telegram Control
 
-DeskResumer includes zero-dependency unit tests running on Python's built-in `unittest` runner:
+- **ntfy.sh (Push Notifications)**: Free, zero-account mobile push alerts on iOS and Android. Specify a topic in Settings or `config.yaml`.
+- **Telegram Bot**: Full two-way control from your phone:
+  - `/status` — View active targets, current step, and remaining cooldown.
+  - `/skip` — Mark current task skipped and advance to next.
+  - `/pause` / `/resume` — Pause or resume the watchdog remotely.
+
+---
+
+## Tests
+
+The test suite runs with zero third-party dependencies using Python's standard `unittest`:
+
 ```bash
 python3 -m unittest discover tests
 ```
-Runs 15+ automated tests validating parser regexes, markdown checklists, and mock notification payloads.
+
+Includes automated test coverage for relative/absolute cooldown parsing, markdown checklist mutations, and notification dispatchers.
 
 ---
 
-## 💡 Official Feature Requests
+## Upstream Feature Requests
 
-We believe these capabilities should eventually be built natively into AI desktop environments. Comprehensive feature request proposals for both engineering teams are included in this repository:
-* [**Proposal for Google Antigravity**](docs/FEATURE_REQUEST_ANTIGRAVITY.md)
-* [**Proposal for OpenAI Codex & ChatGPT Desktop**](docs/FEATURE_REQUEST_CODEX.md)
+Detailed feature request proposals for native integration into both IDEs are included in this repository:
+- [Google Antigravity Proposal](docs/FEATURE_REQUEST_ANTIGRAVITY.md)
+- [OpenAI Codex / ChatGPT Desktop Proposal](docs/FEATURE_REQUEST_CODEX.md)
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Please check out [CONTRIBUTING.md](CONTRIBUTING.md) and open an issue or pull request.
+Pull requests and issues are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 📄 License
+## License
 
-Distributed under the [MIT License](LICENSE).
+[MIT License](LICENSE)

@@ -34,7 +34,7 @@ notifications:
   
   # Option 1: ntfy.sh (Zero account needed, free push notifications to phone)
   # 1. Download the free 'ntfy' app on iOS or Android (or visit https://ntfy.sh in your browser)
-  # 2. Subscribe to any unique topic name (e.g., 'desk-resumer-naqib-alerts')
+  # 2. Subscribe to any unique topic name (e.g., 'my-desk-alerts')
   # 3. Enter that topic name below:
   ntfy:
     topic: ""
