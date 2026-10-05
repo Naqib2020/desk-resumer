@@ -9,7 +9,7 @@ This guide explains how to set up and run DeskResumer on **Windows 10 / Windows 
 1. Open PowerShell or Command Prompt.
 2. Clone the repository onto your Windows PC:
    ```cmd
-   git clone https://github.com/your-username/desk-resumer.git
+   git clone https://github.com/Naqib2020/desk-resumer.git
    cd desk-resumer
    ```
 3. Run the automated installer:

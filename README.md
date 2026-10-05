@@ -49,7 +49,7 @@ Built in C# for Windows 10/11:
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/desk-resumer.git
+git clone https://github.com/Naqib2020/desk-resumer.git
 cd desk-resumer
 
 python3 -m venv venv

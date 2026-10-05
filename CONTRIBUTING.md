@@ -8,7 +8,7 @@ Thank you for your interest in contributing to DeskResumer! We welcome contribut
 
 ### 1. Clone & Set Up Python Environment
 ```bash
-git clone https://github.com/your-username/desk-resumer.git
+git clone https://github.com/Naqib2020/desk-resumer.git
 cd desk-resumer
 
 # Create a virtual environment

@@ -40,6 +40,6 @@ Incorporate native rate-limit awareness and power management into Codex and Chat
 This workflow has been validated in the open-source community via **DeskResumer**, an external supervisor app designed specifically for Codex and Antigravity:
 * Demonstrates OS-level wake locking on macOS & Windows.
 * Implements reliable countdown parsing, automated prompt injection, markdown task queue progression, and two-way remote bot management.
-* **Repository Reference**: *[Link to your DeskResumer GitHub repository]*
+* **Repository Reference**: https://github.com/Naqib2020/desk-resumer
 
 Native support within ChatGPT Desktop / Codex would transform long-running autonomous development into a seamless, unattended experience.

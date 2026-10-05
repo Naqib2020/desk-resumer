@@ -38,6 +38,6 @@ We propose building native quota-aware autonomous resumption and sleep managemen
 An external open-source supervisor tool, **DeskResumer**, was built to solve this exact problem externally:
 * **Architecture**: A lightweight background supervisor with native macOS Menu Bar (SwiftUI) and Windows Tray interfaces.
 * **Capabilities**: Watches process states, acquires OS power assertions, tracks relative & absolute cooldown timers, auto-injects prompts upon wake, parses markdown task queues (`TASKS.md`), and sends push alerts.
-* **Repository**: *[Link to your DeskResumer GitHub repository]*
+* **Repository**: https://github.com/Naqib2020/desk-resumer
 
 Integrating this natively into Antigravity would eliminate the need for external supervisor wrappers, providing an unmatched "fire-and-forget" developer experience for overnight and long-running autonomous coding sessions.
