@@ -46,19 +46,25 @@ class CooldownParser:
 
         now = datetime.now()
 
-        # 1. Check relative format: "in X hours [and] Y minutes"
-        rel_match = re.search(
-            r"in\s+(?:(\d+)\s*h(?:ours?)?)?\s*(?:and\s*)?(?:(\d+)\s*m(?:inutes?)?)?",
-            text,
-            re.IGNORECASE,
-        )
-        if rel_match and (rel_match.group(1) or rel_match.group(2)):
-            hours = int(rel_match.group(1)) if rel_match.group(1) else 0
-            minutes = int(rel_match.group(2)) if rel_match.group(2) else 0
+        # 1. Check relative format: "in 2h 15m", "45m", "1 hour and 30 minutes", etc.
+        hours = 0
+        minutes = 0
+        matched_relative = False
+
+        h_match = re.search(r"(\d+)\s*(?:h\b|hours?)", text, re.IGNORECASE)
+        if h_match:
+            hours = int(h_match.group(1))
+            matched_relative = True
+
+        m_match = re.search(r"(\d+)\s*(?:m\b|mins?|minutes?)", text, re.IGNORECASE)
+        if m_match:
+            minutes = int(m_match.group(1))
+            matched_relative = True
+
+        if matched_relative and (hours > 0 or minutes > 0):
             total_seconds = hours * 3600 + minutes * 60
-            if total_seconds > 0:
-                desc = f"Relative: {hours}h {minutes}m"
-                return True, total_seconds, desc
+            desc = f"Relative: {hours}h {minutes}m"
+            return True, total_seconds, desc
 
         # 2. Check absolute format: "at/until/after HH:MM [AM/PM]"
         time_match = re.search(

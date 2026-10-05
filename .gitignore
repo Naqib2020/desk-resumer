@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
 
 # Distribution / packaging
 dist/
@@ -17,6 +18,11 @@ ENV/
 
 # Configuration local overrides
 config.yaml
+
+# Compiled Native Apps & Binaries
+apps/macos-menubar/DeskResumer.app/Contents/MacOS/DeskResumer
+apps/windows-tray/bin/
+apps/windows-tray/obj/
 
 # IDEs
 .idea/

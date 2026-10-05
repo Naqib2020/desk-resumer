@@ -129,6 +129,9 @@ def main():
     save_cfg_p = subparsers.add_parser("save-config-json", help="Save config from JSON")
     save_cfg_p.add_argument("data", help="JSON configuration string")
 
+    # Command: clear-completed
+    subparsers.add_parser("clear-completed", help="Remove completed tasks from TASKS.md")
+
     args = parser.parse_args()
 
 
@@ -305,6 +308,16 @@ def main():
             with open("TASKS.md", "a", encoding="utf-8") as f:
                 f.write(f"\n- [ ] {text}")
             print(f"Added task: {text}")
+
+    elif args.command == "clear-completed":
+        import re
+        p = Path("TASKS.md")
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                lines = [line for line in f if not re.match(r"^\s*-\s*\[[xX]\]\s+", line)]
+            with open(p, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+            print("Cleared completed tasks from TASKS.md")
 
 
 

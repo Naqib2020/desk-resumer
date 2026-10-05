@@ -201,6 +201,13 @@ class SupervisorViewModel: ObservableObject {
         }
     }
 
+    func clearCompletedTasks() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            _ = self?.runCli(["clear-completed"])
+            self?.refreshState()
+        }
+    }
+
     func triggerPrompt(target: String) {
         let key = target.lowercased().contains("chatgpt") ? "chatgpt" : "antigravity"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -524,7 +531,25 @@ struct LiquidDashboardView: View {
                         }
                         
                         Spacer()
-                        
+
+                        if model.completedCount > 0 {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                                    model.clearCompletedTasks()
+                                }
+                            }) {
+                                Text("Clear Done")
+                                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.secondary)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Capsule().fill(Color.black.opacity(0.06)))
+                                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5))
+                                    .contentShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+
                         Text("\(model.completedCount)/\(model.totalCount) (\(model.totalCount > 0 ? Int(Double(model.completedCount)/Double(model.totalCount)*100) : 0)%)")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .padding(.horizontal, 6)
@@ -555,42 +580,68 @@ struct LiquidDashboardView: View {
                     .frame(height: 5)
 
                     // Task Checklist Items
-                    VStack(spacing: 6) {
-                        ForEach(model.tasks) { task in
-                            Button(action: {
-                                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                                    model.toggleTask(task)
-                                }
-                            }) {
-                                HStack(spacing: 8) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                            .fill(task.completed ? Color.green : Color.black.opacity(0.08))
-                                            .frame(width: 16, height: 16)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                                    .strokeBorder(task.completed ? Color.green : Color.white.opacity(0.4), lineWidth: 0.75)
-                                            )
+                    if model.tasks.isEmpty {
+                        VStack(spacing: 5) {
+                            Image(systemName: "list.clipboard")
+                                .font(.system(size: 18))
+                                .foregroundColor(.secondary.opacity(0.5))
+                                .padding(.top, 4)
 
-                                        if task.completed {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 9, weight: .bold))
-                                                .foregroundColor(.white)
-                                        }
+                            Text("No Subtasks Queued")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundColor(.primary)
+
+                            Text("Tasks added below or in TASKS.md execute in sequence. Without tasks, DeskResumer injects the default resume prompt.")
+                                .font(.system(size: 9.5, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 12)
+                                .padding(.bottom, 4)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.black.opacity(0.025))
+                        )
+                    } else {
+                        VStack(spacing: 6) {
+                            ForEach(model.tasks) { task in
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                                        model.toggleTask(task)
                                     }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                                .fill(task.completed ? Color.green : Color.black.opacity(0.08))
+                                                .frame(width: 16, height: 16)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                                        .strokeBorder(task.completed ? Color.green : Color.white.opacity(0.4), lineWidth: 0.75)
+                                                )
 
-                                    Text(task.text)
-                                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                                        .strikethrough(task.completed)
-                                        .foregroundColor(task.completed ? .secondary : .primary)
-                                        .lineLimit(2)
+                                            if task.completed {
+                                                Image(systemName: "checkmark")
+                                                    .font(.system(size: 9, weight: .bold))
+                                                    .foregroundColor(.white)
+                                            }
+                                        }
 
-                                    Spacer()
+                                        Text(task.text)
+                                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                                            .strikethrough(task.completed)
+                                            .foregroundColor(task.completed ? .secondary : .primary)
+                                            .lineLimit(2)
+
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, 3)
+                                    .contentShape(Rectangle())
                                 }
-                                .padding(.vertical, 3)
-                                .contentShape(Rectangle())
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
 
