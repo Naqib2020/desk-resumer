@@ -75,7 +75,10 @@ enum ActiveTab: String, CaseIterable {
 // MARK: - View Model
 class SupervisorViewModel: ObservableObject {
     @Published var selectedTab: ActiveTab = .dashboard
-    @Published var targets: [TargetChannel] = []
+    @Published var targets: [TargetChannel] = [
+        TargetChannel(name: "ChatGPT", running: false, busy: false, is_limited: false, wait_seconds: 0, desc: nil),
+        TargetChannel(name: "Antigravity", running: false, busy: false, is_limited: false, wait_seconds: 0, desc: nil)
+    ]
     @Published var tasks: [PipelineTask] = []
     @Published var completedCount: Int = 0
     @Published var totalCount: Int = 0
@@ -136,12 +139,27 @@ class SupervisorViewModel: ObservableObject {
         }
     }
 
+    private var repoDir: String {
+        let bundleUrl = Bundle.main.bundleURL
+        let candidateDir = bundleUrl.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path
+        let pyprojectCandidate = (candidateDir as NSString).appendingPathComponent("pyproject.toml")
+        if FileManager.default.fileExists(atPath: pyprojectCandidate) {
+            return candidateDir
+        }
+        return "/Users/naqib/Documents/desk-resumer"
+    }
+
     func runCli(_ args: [String]) -> String? {
         let process = Process()
         let pipe = Pipe()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
         process.arguments = ["-m", "desk_resumer.cli"] + args
         process.currentDirectoryURL = URL(fileURLWithPath: projectDir)
+
+        var env = ProcessInfo.processInfo.environment
+        env["PYTHONPATH"] = repoDir
+        process.environment = env
+
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
 
