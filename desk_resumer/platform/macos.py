@@ -62,7 +62,13 @@ class MacOSAdapter(PlatformAdapter):
         end tell
         '''
         res = subprocess.run(["osascript", "-e", applescript], capture_output=True, text=True)
-        return res.returncode == 0
+        if res.returncode != 0:
+            err = res.stderr.strip()
+            print(f"[MacOSAdapter] Keystroke injection error: {err}")
+            if "1002" in err or "not allowed to send keystrokes" in err:
+                print("[MacOSAdapter] ⚠️ macOS Accessibility permission required! Open System Settings > Privacy & Security > Accessibility and enable DeskResumer (or Terminal).")
+            return False
+        return True
 
     def get_window_text_content(self, app_name: str) -> Optional[str]:
         """

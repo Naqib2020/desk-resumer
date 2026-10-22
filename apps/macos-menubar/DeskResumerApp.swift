@@ -114,6 +114,9 @@ class SupervisorViewModel: ObservableObject {
 
         refreshState()
 
+        let axOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(axOptions)
+
         self.timer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { [weak self] _ in
             self?.refreshState()
         }
@@ -215,8 +218,13 @@ class SupervisorViewModel: ObservableObject {
 
     func triggerPrompt(target: String) {
         let key = target.lowercased().contains("chatgpt") ? "chatgpt" : "antigravity"
+        let promptToSend = tasks.first(where: { !$0.completed })?.text ?? "Continue"
+
+        let axOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(axOptions)
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            _ = self?.runCli(["test-resume", "--app", key, "--prompt", "Testing DeskResumer trigger."])
+            _ = self?.runCli(["test-resume", "--app", key, "--prompt", promptToSend])
             self?.refreshState()
         }
     }
