@@ -1,9 +1,12 @@
 """
-macOS implementation using AppleScript, caffeinate, and System Events.
+macOS implementation using CoreGraphics / CGEvent, caffeinate, and clipboard.
 """
 
+import ctypes
+import os
 import subprocess
 import time
+from ctypes import c_bool, c_uint16, c_uint32, c_uint64, c_void_p
 from typing import Optional
 from .base import PlatformAdapter
 
@@ -11,6 +14,26 @@ from .base import PlatformAdapter
 class MacOSAdapter(PlatformAdapter):
     def __init__(self):
         self._caffeinate_process: Optional[subprocess.Popen] = None
+        self._app_services = None
+        self._core_foundation = None
+        self._init_cgraphics()
+
+    def _init_cgraphics(self):
+        try:
+            self._app_services = ctypes.CDLL("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")
+            self._core_foundation = ctypes.CDLL("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
+
+            self._app_services.CGEventSourceCreate.restype = c_void_p
+            self._app_services.CGEventSourceCreate.argtypes = [c_uint32]
+            self._app_services.CGEventCreateKeyboardEvent.restype = c_void_p
+            self._app_services.CGEventCreateKeyboardEvent.argtypes = [c_void_p, c_uint16, c_bool]
+            self._app_services.CGEventSetFlags.restype = None
+            self._app_services.CGEventSetFlags.argtypes = [c_void_p, c_uint64]
+            self._app_services.CGEventPost.restype = None
+            self._app_services.CGEventPost.argtypes = [c_uint32, c_void_p]
+            self._core_foundation.CFRelease.argtypes = [c_void_p]
+        except Exception as e:
+            print(f"[MacOSAdapter] CGEvent init warning: {e}")
 
     def is_process_running(self, process_name: str) -> bool:
         """Check if process exists using pgrep."""
@@ -25,7 +48,14 @@ class MacOSAdapter(PlatformAdapter):
             return False
 
     def focus_app_window(self, app_name: str) -> bool:
-        """Activate the application window via AppleScript."""
+        """Activate the application window via open -a with AppleScript fallback."""
+        try:
+            res = subprocess.run(["open", "-a", app_name], capture_output=True, text=True)
+            if res.returncode == 0:
+                return True
+        except Exception:
+            pass
+
         script = f'tell application "{app_name}" to activate'
         res = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
         return res.returncode == 0
@@ -33,12 +63,12 @@ class MacOSAdapter(PlatformAdapter):
     def inject_text_and_submit(self, app_name: str, text: str) -> bool:
         """
         Activates the app, copies text to clipboard (to handle special characters cleanly),
-        pastes it (Cmd+V), and hits Return.
+        pastes it (Cmd+V), and hits Return using CoreGraphics CGEvent.
         """
         if not self.focus_app_window(app_name):
             return False
 
-        time.sleep(1.0)
+        time.sleep(0.6)
 
         # 1. Copy text to clipboard via pbcopy
         try:
@@ -48,15 +78,48 @@ class MacOSAdapter(PlatformAdapter):
             print(f"[Error] Failed to copy to clipboard: {e}")
             return False
 
-        # 2. Paste and hit Return using AppleScript System Events
+        # 2. Inject Cmd+V and Return via native CoreGraphics CGEvent
+        if self._app_services and self._core_foundation:
+            try:
+                src = self._app_services.CGEventSourceCreate(1)  # kCGEventSourceStateHIDSystemState
+                if src:
+                    kCGEventFlagMaskCommand = 0x00100000
+
+                    # Cmd + V (virtualKey 9)
+                    v_down = self._app_services.CGEventCreateKeyboardEvent(src, 9, True)
+                    self._app_services.CGEventSetFlags(v_down, kCGEventFlagMaskCommand)
+                    self._app_services.CGEventPost(0, v_down)
+
+                    v_up = self._app_services.CGEventCreateKeyboardEvent(src, 9, False)
+                    self._app_services.CGEventSetFlags(v_up, kCGEventFlagMaskCommand)
+                    self._app_services.CGEventPost(0, v_up)
+
+                    self._core_foundation.CFRelease(v_down)
+                    self._core_foundation.CFRelease(v_up)
+
+                    time.sleep(0.35)
+
+                    # Return (virtualKey 36)
+                    ret_down = self._app_services.CGEventCreateKeyboardEvent(src, 36, True)
+                    self._app_services.CGEventPost(0, ret_down)
+
+                    ret_up = self._app_services.CGEventCreateKeyboardEvent(src, 36, False)
+                    self._app_services.CGEventPost(0, ret_up)
+
+                    self._core_foundation.CFRelease(ret_down)
+                    self._core_foundation.CFRelease(ret_up)
+                    self._core_foundation.CFRelease(src)
+                    return True
+            except Exception as e:
+                print(f"[MacOSAdapter] CGEvent injection warning: {e}, attempting AppleScript fallback")
+
+        # Fallback to AppleScript System Events if CGEvent unavailable
         applescript = f'''
         tell application "System Events"
             tell process "{app_name}"
                 set frontmost to true
-                -- Send Cmd+V to paste the prompt
                 keystroke "v" using command down
                 delay 0.5
-                -- Send Return to execute
                 key code 36
             end tell
         end tell
@@ -65,8 +128,6 @@ class MacOSAdapter(PlatformAdapter):
         if res.returncode != 0:
             err = res.stderr.strip()
             print(f"[MacOSAdapter] Keystroke injection error: {err}")
-            if "1002" in err or "not allowed to send keystrokes" in err:
-                print("[MacOSAdapter] ⚠️ macOS Accessibility permission required! Open System Settings > Privacy & Security > Accessibility and enable DeskResumer (or Terminal).")
             return False
         return True
 

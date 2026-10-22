@@ -117,8 +117,11 @@ class SupervisorViewModel: ObservableObject {
 
         refreshState()
 
-        let axOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        _ = AXIsProcessTrustedWithOptions(axOptions)
+        // Only prompt for Accessibility if not already trusted by macOS
+        if !AXIsProcessTrusted() {
+            let axOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            _ = AXIsProcessTrustedWithOptions(axOptions)
+        }
 
         self.timer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { [weak self] _ in
             self?.refreshState()
@@ -235,15 +238,70 @@ class SupervisorViewModel: ObservableObject {
     }
 
     func triggerPrompt(target: String) {
-        let key = target.lowercased().contains("chatgpt") ? "chatgpt" : "antigravity"
+        let isChatGPT = target.lowercased().contains("chatgpt")
         let promptToSend = tasks.first(where: { !$0.completed })?.text ?? "Continue"
 
-        let axOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        _ = AXIsProcessTrustedWithOptions(axOptions)
+        if !AXIsProcessTrusted() {
+            let axOptions = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            _ = AXIsProcessTrustedWithOptions(axOptions)
+            return
+        }
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            _ = self?.runCli(["test-resume", "--app", key, "--prompt", promptToSend])
-            self?.refreshState()
+        // Native instant activation & keystroke injection in Swift
+        injectNativePrompt(isChatGPT: isChatGPT, prompt: promptToSend)
+    }
+
+    private func injectNativePrompt(isChatGPT: Bool, prompt: String) {
+        let appName = isChatGPT ? "ChatGPT" : "Antigravity"
+        let bundleIds = isChatGPT ? ["com.openai.codex", "com.openai.chat"] : ["com.google.antigravity", "com.google.antigravity-ide"]
+
+        let apps = NSWorkspace.shared.runningApplications
+        guard let app = apps.first(where: { runningApp in
+            if let bid = runningApp.bundleIdentifier, bundleIds.contains(bid) { return true }
+            if let name = runningApp.localizedName, name.lowercased().contains(appName.lowercased()) { return true }
+            return false
+        }) else {
+            // Fallback to CLI test-resume if process not found in GUI workspace
+            let key = isChatGPT ? "chatgpt" : "antigravity"
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                _ = self?.runCli(["test-resume", "--app", key, "--prompt", prompt])
+                self?.refreshState()
+            }
+            return
+        }
+
+        // 1. Activate target application
+        app.activate()
+
+        // 2. Put prompt into General Clipboard
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(prompt, forType: .string)
+
+        // 3. Post Cmd+V and Return via native CGEvent
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            let src = CGEventSource(stateID: .hidSystemState)
+
+            // Cmd + V (virtualKey: 9)
+            if let vDown = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: true) {
+                vDown.flags = .maskCommand
+                vDown.post(tap: .cghidEventTap)
+            }
+            if let vUp = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: false) {
+                vUp.flags = .maskCommand
+                vUp.post(tap: .cghidEventTap)
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                // Return (virtualKey: 36)
+                if let retDown = CGEvent(keyboardEventSource: src, virtualKey: 36, keyDown: true) {
+                    retDown.post(tap: .cghidEventTap)
+                }
+                if let retUp = CGEvent(keyboardEventSource: src, virtualKey: 36, keyDown: false) {
+                    retUp.post(tap: .cghidEventTap)
+                }
+
+                self?.refreshState()
+            }
         }
     }
 

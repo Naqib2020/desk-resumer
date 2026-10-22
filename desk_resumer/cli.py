@@ -179,9 +179,7 @@ def main():
             print(f"App {args.app} not found.")
             sys.exit(1)
         target = targets[0]
-        print(f"🚀 Testing prompt injection into {target.name} in 3 seconds...")
-        import time
-        time.sleep(3)
+        print(f"🚀 Injecting prompt into {target.name}...")
         success = target.resume_task(args.prompt)
         if success:
             print(f"✅ Success! Injected prompt into {target.name}.")

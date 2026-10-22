@@ -16,4 +16,7 @@ cp Info.plist "$CONTENTS/Info.plist"
 
 swiftc -O -target arm64-apple-macosx13.0 -parse-as-library DeskResumerApp.swift -o "$MACOS/DeskResumer"
 
-echo "✅ DeskResumer.app compiled successfully!"
+echo "🔒 Codesigning DeskResumer.app with ad-hoc signature..."
+codesign --force --deep --sign - "$APP_BUNDLE"
+
+echo "✅ DeskResumer.app compiled and signed successfully!"
